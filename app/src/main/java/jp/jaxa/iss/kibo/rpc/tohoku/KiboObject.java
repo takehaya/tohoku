@@ -1,5 +1,8 @@
 package jp.jaxa.iss.kibo.rpc.tohoku;
 
+import gov.nasa.arc.astrobee.types.Point;
+import gov.nasa.arc.astrobee.types.Quaternion;
+
 public class KiboObject{
     String name;
     private double mPx;
@@ -84,5 +87,11 @@ public class KiboObject{
 
     public void setOw(double mOw) {
         this.mOw = mOw;
+    }
+
+    public Point getPoint() { return new Point(this.mPx, this.mPy, this.mPz); }
+
+    public Quaternion getQuaternion(){
+        return new Quaternion((float)this.mOx, (float) this.mOy, (float) this.mOz, (float)this.mOz);
     }
 }
