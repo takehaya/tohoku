@@ -7,6 +7,7 @@ enum QRInfoType {
     QuaX,
     QuaY,
     QuaZ,
+    P3,
 }
 
 
