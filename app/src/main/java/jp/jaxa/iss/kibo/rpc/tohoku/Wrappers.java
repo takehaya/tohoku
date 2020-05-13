@@ -1,7 +1,5 @@
 package jp.jaxa.iss.kibo.rpc.tohoku;
 
-import org.apache.commons.io.filefilter.FalseFileFilter;
-
 import gov.nasa.arc.astrobee.Result;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
