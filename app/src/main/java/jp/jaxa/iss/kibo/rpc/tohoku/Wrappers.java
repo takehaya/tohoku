@@ -11,10 +11,22 @@ public class Wrappers {
         this.api = api;
     }
 
-    // You can add your method
+    public void moveTo(Vec3 vec, WrapQuaternion quat) {
+        moveToRun(
+                vec.getX(), vec.getY(), vec.getZ(),
+                quat.getX(),quat.getY(), quat.getZ(), quat.getW()
+        );
+    }
     public void moveTo(double pos_x, double pos_y, double pos_z,
-                               double qua_x, double qua_y, double qua_z,
-                               double qua_w) {
+                       float qua_x, float qua_y, float qua_z, float qua_w) {
+        moveToRun(
+                pos_x, pos_y, pos_z,
+                qua_x, qua_y, qua_z, qua_w
+        );
+    }
+    // You can add your method
+    private void moveToRun(double pos_x, double pos_y, double pos_z,
+                               float qua_x, float qua_y, float qua_z, float qua_w) {
 
         final int LOOP_MAX = 3;
         final Point point = new Point(pos_x, pos_y, pos_z);
@@ -28,5 +40,27 @@ public class Wrappers {
             result = this.api.moveTo(point, quaternion, true);
             ++loopCounter;
         }
+    }
+
+    public void moveToRelative(Vec3 vec, WrapQuaternion quat) {
+        moveToRelativeRun(
+                vec.getX(), vec.getY(), vec.getZ(),
+                quat.getX(),quat.getY(), quat.getZ(), quat.getW()
+        );
+    }
+    public void moveToRelative(double pos_x, double pos_y, double pos_z,
+                       float qua_x, float qua_y, float qua_z, float qua_w) {
+        moveToRelativeRun(
+                pos_x, pos_y, pos_z,
+                qua_x, qua_y, qua_z, qua_w
+        );
+    }
+
+    private void moveToRelativeRun(double pos_x, double pos_y, double pos_z,
+                                float qua_x, float qua_y, float qua_z, float qua_w){
+        final Point point = new Point(pos_x, pos_y, pos_z);
+        final Quaternion quaternion = new Quaternion((float)qua_x, (float)qua_y,
+                (float)qua_z, (float)qua_w);
+        api.relativeMoveTo(point, quaternion, true);
     }
 }
