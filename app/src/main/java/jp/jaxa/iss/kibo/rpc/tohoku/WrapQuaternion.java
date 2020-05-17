@@ -3,7 +3,7 @@ package jp.jaxa.iss.kibo.rpc.tohoku;
 import gov.nasa.arc.astrobee.types.Quaternion;
 
 public class WrapQuaternion extends Quaternion {
-    private static Quaternion  identityQuaternion = new Quaternion();
+    private static WrapQuaternion  identityQuaternion = new WrapQuaternion();
     public final static double kEpsilon = 0.000001F;
     public WrapQuaternion() {
         this(0.0F, 0.0F, 0.0F, 1.0F);
@@ -50,15 +50,15 @@ public class WrapQuaternion extends Quaternion {
     public static Quaternion mul(Quaternion lhs, Quaternion rhs)
     {
         return new Quaternion(
-                lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
-                lhs.w * rhs.y + lhs.y * rhs.w + lhs.z * rhs.x - lhs.x * rhs.z,
-                lhs.w * rhs.z + lhs.z * rhs.w + lhs.x * rhs.y - lhs.y * rhs.x,
-                lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z
+                lhs.getW() * rhs.getX() + lhs.getX() * rhs.getW() + lhs.getY() * rhs.getZ() - lhs.getZ() * rhs.getY(),
+                lhs.getW() * rhs.getY() + lhs.getY() * rhs.getW() + lhs.getZ() * rhs.getX() - lhs.getX() * rhs.getZ(),
+                lhs.getW() * rhs.getZ() + lhs.getZ() * rhs.getW() + lhs.getX() * rhs.getY() - lhs.getY() * rhs.getX(),
+                lhs.getW() * rhs.getW() - lhs.getX() * rhs.getX() - lhs.getY() * rhs.getY() - lhs.getZ() * rhs.getZ()
         );
     }
     // The dot product between two rotations.
     public static float dot(Quaternion a, Quaternion b)
     {
-        return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+        return a.getX() * b.getX() + a.getY() * b.getY() + a.getZ() * b.getZ() + a.getW() * b.getW();
     }
 }

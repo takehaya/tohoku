@@ -19,7 +19,6 @@ public class QRManager {
     public Map<String, Double> DecodeinTable(Mat input){
 //        Imgproc.GaussianBlur(input, input, new Size(5, 5), 0, 0);
 //        Imgproc.threshold(input, input, 0.0, 255.0, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
-        this.QRdetector.detect(input, )
         String data = this.Decoder(input);
         if (0 < data.length()){
 

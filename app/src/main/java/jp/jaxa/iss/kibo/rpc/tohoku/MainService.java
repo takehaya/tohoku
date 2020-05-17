@@ -1,9 +1,27 @@
 package jp.jaxa.iss.kibo.rpc.tohoku;
 
+import android.graphics.Bitmap;
+import android.util.Log;
+
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.LuminanceSource;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.RGBLuminanceSource;
+import com.google.zxing.Reader;
+import com.google.zxing.common.HybridBinarizer;
+
+import org.opencv.aruco.Aruco;
+import org.opencv.aruco.Dictionary;
+import org.opencv.core.Mat;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import gov.nasa.arc.astrobee.Result;
+import gov.nasa.arc.astrobee.types.Point;
+import gov.nasa.arc.astrobee.types.Quaternion;
 import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
 /**
  * Class meant to handle commands from the Ground Data System and execute them in Astrobee
@@ -11,8 +29,6 @@ import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
 
 
 public class MainService extends KiboRpcService {
-    private Wrappers wraps = new Wrappers(api);
-
     private List<KiboQRField> QRTable = new ArrayList<KiboQRField>(Arrays.asList(
         new KiboQRField("1-1", 11.5, -5.7, 4.5, 0, 0, 0, 1, QRInfoType.PosX),
         new KiboQRField("1-2", 11, -6, 5.55, 0, -0.7071068, 0, 0.7071068, QRInfoType.PosY),
@@ -34,37 +50,245 @@ public class MainService extends KiboRpcService {
         new KeepZone(10.45, -9.1, 4.6, 10.65, -8.9, 4.8, false),
         new KeepZone(10.25, -9.75, 4.2, 11.65, -3, 5.6, true)
     ));
-
+    public static final String LOGTAG = "TohokuKibo";
 
     private AstrobeeField AstrobeeNode = new AstrobeeField(10.95, -3.75, 4.85, 0, 0, 0.707, -0.707);
+
     @Override
     protected void runPlan1() {
-        // start this run
-        api.judgeSendStart();
-
-        wraps.moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
-        wraps.moveTo(11, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
-        wraps.moveTo(11, -5.7, 5, 0, 0, -0.7071068, 0.7071068);
-        wraps.moveTo(11.5, -5.7, 4.5, 0, 0, 0, 1);
-        wraps.moveTo(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
-
-        wraps.moveTo(11.1, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
-
+        runPlan2();
+//        // start this run
+//        api.judgeSendStart();
+//        Log.i(LOGTAG, "apijudgeSendStart");
+//        //qr1 move
+//        wraps.moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
+//        wraps.moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068f);
+//        wraps.moveTo(11, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
+//        wraps.moveTo(11, -5.7, 5, 0, 0,  -0.7071068, 0.7071068f);
+//        wraps.moveTo(11.5, -5.7, 4.5, 0, 0, 0, 1);
 //        Bitmap snapshot = api.getBitmapNavCam();
-//        api.judgeSendDiscoveredAR(markerId);
-        api.laserControl(true);
-        api.judgeSendFinishSimulation();
-//        sendData(MessageType.JSON, "data", "SUCCESS:defaultapk runPlan1");
+//        String QRcodeString = readQrcode(snapshot);
+//        api.judgeSendDiscoveredQR(0,QRcodeString);//送信
+//
+////        api.judgeSendDiscoveredAR(markerId);
+////        api.laserControl(true);
+//        api.judgeSendFinishSimulation();
+////        sendData(MessageType.JSON, "data", "SUCCESS:defaultapk runPlan1");
     }
 
     @Override
     protected void runPlan2() {
-        // write here your plan 2
+        Log.i(LOGTAG, "apijudgeSendStart");
+        api.judgeSendStart();
+        String p1_1_con[] = new String[2];
+        String p1_2_con[] = new String[2];
+        String p1_3_con[] = new String[2];
+        String p2_1_con[] = new String[2];
+        String p2_2_con[] = new String[2];
+        String p2_3_con[] = new String[2];
+        int arv = 0;
+
+
+        moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
+
+        Log.i(LOGTAG,"start scan 1");
+        moveTo(11.55, -5.7, 4.5, 0, 0, 0, 1);
+        String p1_1 = scanBarcode(11.5 , -5.7, 4.5, 0, 0, 0, 1,0);
+        p1_1_con = p1_1.split(", ");
+        double px3 = Double.parseDouble(p1_1_con[1]);
+        Log.d(LOGTAG,"p1_1 = " + p1_1);
+
+
+        Log.d(LOGTAG,"start scan 2");
+        moveTo(11, -5.5, 4.33, 0, 0.7071068, 0, 0.7071068);
+        String p1_3 = scanBarcode(11, -5.5, 4.33, 0, 0.7071068, 0, 0.7071068,2);
+        p1_3_con = p1_3.split(", ");
+        double pz3 = Double.parseDouble(p1_3_con[1]);
+        Log.d(LOGTAG,"p1_3 = " + p1_3);
+
+
+        Log.d(LOGTAG,"start scan 3");
+        moveTo(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
+        String p1_2 = scanBarcode(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068,1);
+        p1_2_con = p1_2.split(", ");
+        double py3 = Double.parseDouble(p1_2_con[1]);
+        Log.d(LOGTAG,"p1_2 = " + p1_2);
+
+
+        moveTo(10.50,-6.45,5.40,0,0,0,0);
+
+        Log.d(LOGTAG,"start scan 4");
+        String p2_2 = scanBarcode(11.49,-8,5,0,0,0,1,4);
+        p2_2_con = p2_2.split(", ");
+        double qz3 = Double.parseDouble(p2_2_con[1]);
+        Log.d(LOGTAG,"p1_2 = " + p2_2);
+
+
+        Log.d(LOGTAG,"start scan 5");
+        String p2_3 = scanBarcode(11,-7.7,5.44,0.7,0,0.7,0 ,5);
+        p2_3_con = p2_3.split(", ");
+        double qy3 = Double.parseDouble(p2_3_con[1]);
+        Log.d(LOGTAG,"p2_2 = " + p2_3);
+
+
+        Log.d(LOGTAG,"start scan 6");
+        String p2_1 = scanBarcode(10.41,-7.5,4.7,0,0,1,0,3);
+        p2_1_con = p2_1.split(", ");
+        double qx3 = Double.parseDouble(p2_1_con[1]);
+        Log.d(LOGTAG,"p2_1 = " + p2_1);
+
+
+        moveTo(px3,py3,pz3,qx3,qy3,qz3,Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3)));
+        Mat ids = new Mat();
+        while (arv == 0) {
+            Mat source = api.getMatNavCam();
+            Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
+            List<Mat> corners = new ArrayList<>();
+            Aruco.detectMarkers(source, dictionary, corners, ids);
+            arv = (int) ids.get(0, 0)[0];
+        }
+
+        api.judgeSendDiscoveredAR(Integer.toString(arv));
+        api.laserControl(true);
+        api.judgeSendFinishSimulation();
+
+
     }
 
     @Override
     protected void runPlan3() {
         // write here your plan 3
+    }
+
+
+    //-------------QR Decoding--------------------
+
+    private String scanBarcode(double pos_x, double pos_y, double pos_z,
+                               double qua_x, double qua_y, double qua_z,
+                               double qua_w,int no){
+        int loopMax = 10;
+        int loop = 0;
+        Bitmap snapshot = api.getBitmapNavCam();
+        String value = detectQrcode(snapshot);
+        double viewP = 0.025;
+        while (value == null && loop < loopMax) {
+            if (loop%8 == 0) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y,qua_z,qua_w);
+            else if (loop%8 == 1) moveTo(pos_x,pos_y,pos_z,qua_x,qua_y + viewP,qua_z,qua_w);
+            else if (loop%8 == 2) moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z + viewP,qua_w);
+            else if (loop%8 == 3) moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w + viewP);
+            else if (loop%8 == 4) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y + viewP,qua_z,qua_w);
+            else if (loop%8 == 5) moveTo(pos_x,pos_y,pos_z,qua_x,qua_y + viewP,qua_z + viewP,qua_w);
+            else if (loop%8 == 6) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y,qua_z + viewP,qua_w);
+            else if (loop%8 == 7) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y + viewP,qua_z + viewP,qua_w);
+            else  moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
+            snapshot = api.getBitmapNavCam();
+            value = detectQrcode(snapshot);
+            loop++;
+        }
+        if (value != null) {
+            api.judgeSendDiscoveredQR(no , value);
+            System.out.println("valuesQR" + value);
+        }
+        else{
+            System.out.println("valuesQR = null");
+        }
+        return value;
+    }
+
+    private String detectQrcode(Bitmap bitmap) {
+        // Bitmap のサイズを取得して、ピクセルデータを取得する
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int[] pixels = new int[width * height];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+
+        try {
+            // zxing で扱える BinaryBitmap形式に変換する
+            LuminanceSource source = new RGBLuminanceSource(width, height, pixels);
+            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+            // zxing で画像データを読み込み解析する
+            Reader reader = new MultiFormatReader();
+            com.google.zxing.Result decodeResult = reader.decode(binaryBitmap);
+            // 解析結果を取得する
+            String result = decodeResult.getText();
+            Log.d("readQR", result);
+            return result;
+        } catch (Exception e) {
+            Log.d("readQR", e.getLocalizedMessage());
+            return "error";
+        }
+    }
+
+    //-----------------basic functions----------------------
+
+    public void moveTo(Vec3 vec, WrapQuaternion quat) {
+        moveToRun(
+                vec.getX(), vec.getY(), vec.getZ(),
+                quat.getX(),quat.getY(), quat.getZ(), quat.getW()
+        );
+    }
+    public void moveTo(double pos_x, double pos_y, double pos_z,
+                       double qua_x, double qua_y, double qua_z, double qua_w) {
+        moveToRun(
+                pos_x, pos_y, pos_z,
+                (float) qua_x, (float)qua_y, (float)qua_z, (float)qua_w
+        );
+    }
+    private void moveToRun(double pos_x, double pos_y, double pos_z,
+                           float qua_x, float qua_y, float qua_z, float qua_w) {
+
+        final int LOOP_MAX = 3;
+        final Point point = new Point(pos_x, pos_y, pos_z);
+        final Quaternion quaternion = new Quaternion(qua_x, qua_y, qua_z, qua_w);
+
+        String mes = "{" + "moveTo" + ","
+                + BigDecimal.valueOf(pos_x).toPlainString() + ","
+                + BigDecimal.valueOf(pos_y).toPlainString() + ","
+                + BigDecimal.valueOf(pos_z).toPlainString() + ","
+                + BigDecimal.valueOf(qua_x).toPlainString() + ","
+                + BigDecimal.valueOf(qua_y).toPlainString() + ","
+                + BigDecimal.valueOf(qua_z).toPlainString() + ","
+                + BigDecimal.valueOf(qua_w).toPlainString() + ","
+                + "}";
+        Log.i(MainService.LOGTAG, mes);
+
+        Result result = this.api.moveTo(point, quaternion, true);
+        int loopCounter = 0;
+        while (!result.hasSucceeded() || loopCounter < LOOP_MAX) {
+            result = this.api.moveTo(point, quaternion, true);
+            ++loopCounter;
+        }
+    }
+
+    public void moveToRelative(Vec3 vec, WrapQuaternion quat) {
+        moveToRelativeRun(
+                vec.getX(), vec.getY(), vec.getZ(),
+                quat.getX(),quat.getY(), quat.getZ(), quat.getW()
+        );
+    }
+    public void moveToRelative(double pos_x, double pos_y, double pos_z,
+                               float qua_x, float qua_y, float qua_z, float qua_w) {
+        moveToRelativeRun(
+                pos_x, pos_y, pos_z,
+                qua_x, qua_y, qua_z, qua_w
+        );
+    }
+    private void moveToRelativeRun(double pos_x, double pos_y, double pos_z,
+                                   float qua_x, float qua_y, float qua_z, float qua_w){
+        final Point point = new Point(pos_x, pos_y, pos_z);
+        final Quaternion quaternion = new Quaternion((float)qua_x, (float)qua_y,
+                (float)qua_z, (float)qua_w);
+        String mes = "{" + "moveToRelative" + ","
+                + BigDecimal.valueOf(pos_x).toPlainString() + ","
+                + BigDecimal.valueOf(pos_y).toPlainString() + ","
+                + BigDecimal.valueOf(pos_z).toPlainString() + ","
+                + BigDecimal.valueOf(qua_x).toPlainString() + ","
+                + BigDecimal.valueOf(qua_y).toPlainString() + ","
+                + BigDecimal.valueOf(qua_z).toPlainString() + ","
+                + BigDecimal.valueOf(qua_w).toPlainString() + ","
+                + "}";
+        Log.i(MainService.LOGTAG, mes);
+        api.relativeMoveTo(point, quaternion, true);
     }
 }
 

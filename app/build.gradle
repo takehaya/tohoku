@@ -7,12 +7,21 @@ android {
     defaultConfig {
         applicationId "jp.jaxa.iss.kibo.rpc.tohoku" +
                 ""
-        minSdkVersion 26
+        minSdkVersion 25
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled  true
+        packagingOptions {
+            pickFirst "lib/armeabi/libopencv_java3.so"
+            pickFirst "lib/mips/libopencv_java3.so"
+            pickFirst "lib/arm64-v8a/libopencv_java3.so"
+            pickFirst "lib/x86_64/libopencv_java3.so"
+            pickFirst "lib/mips64/libopencv_java3.so"
+            pickFirst "lib/armeabi-v7a/libopencv_java3.so"
+            pickFirst "lib/x86/libopencv_java3.so"
+        }
     }
     buildTypes {
         release {

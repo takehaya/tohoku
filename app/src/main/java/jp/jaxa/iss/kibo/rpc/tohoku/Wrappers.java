@@ -1,5 +1,9 @@
 package jp.jaxa.iss.kibo.rpc.tohoku;
 
+import android.util.Log;
+
+import java.math.BigDecimal;
+
 import gov.nasa.arc.astrobee.Result;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
@@ -18,10 +22,10 @@ public class Wrappers {
         );
     }
     public void moveTo(double pos_x, double pos_y, double pos_z,
-                       float qua_x, float qua_y, float qua_z, float qua_w) {
+                       double qua_x, double qua_y, double qua_z, double qua_w) {
         moveToRun(
                 pos_x, pos_y, pos_z,
-                qua_x, qua_y, qua_z, qua_w
+                (float) qua_x, (float)qua_y, (float)qua_z, (float)qua_w
         );
     }
     // You can add your method
@@ -33,8 +37,18 @@ public class Wrappers {
         final Quaternion quaternion = new Quaternion((float) qua_x, (float) qua_y,
                 (float) qua_z, (float) qua_w);
 
-        Result result = this.api.moveTo(point, quaternion, true);
+        String mes = "{" + "MoveTo" + ","
+                + BigDecimal.valueOf(pos_x).toPlainString() + ","
+                + BigDecimal.valueOf(pos_y).toPlainString() + ","
+                + BigDecimal.valueOf(pos_z).toPlainString() + ","
+                + BigDecimal.valueOf(qua_x).toPlainString() + ","
+                + BigDecimal.valueOf(qua_y).toPlainString() + ","
+                + BigDecimal.valueOf(qua_z).toPlainString() + ","
+                + BigDecimal.valueOf(qua_w).toPlainString() + ","
+                + "}";
+        Log.i(MainService.LOGTAG, mes);
 
+        Result result = this.api.moveTo(point, quaternion, true);
         int loopCounter = 0;
         while (!result.hasSucceeded() || loopCounter < LOOP_MAX) {
             result = this.api.moveTo(point, quaternion, true);
