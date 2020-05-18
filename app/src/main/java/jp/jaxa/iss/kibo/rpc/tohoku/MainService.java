@@ -89,66 +89,67 @@ public class MainService extends KiboRpcService {
         int arv = 0;
 
 
+//        moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
+
         moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
+        moveTo(10.6, -5.7, 5, 0, 0, -0.7071068, 0.7071068);
 
         Log.i(LOGTAG,"start scan 1");
-        moveTo(11.55, -5.7, 4.5, 0, 0, 0, 1);
-        String p1_1 = scanBarcode(11.5 , -5.7, 4.5, 0, 0, 0, 1,0);
+        String p1_1 = scanBarcode(11.5 , -5.7-0.5, 4.5, 0, 0, 0, 1,0);
         p1_1_con = p1_1.split(", ");
         double px3 = Double.parseDouble(p1_1_con[1]);
         Log.d(LOGTAG,"p1_1 = " + p1_1);
+        moveTo(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
 
 
         Log.d(LOGTAG,"start scan 2");
-        moveTo(11, -5.5, 4.33, 0, 0.7071068, 0, 0.7071068);
-        String p1_3 = scanBarcode(11, -5.5, 4.33, 0, 0.7071068, 0, 0.7071068,2);
+        String p1_3 = scanBarcode(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068,1);
         p1_3_con = p1_3.split(", ");
         double pz3 = Double.parseDouble(p1_3_con[1]);
         Log.d(LOGTAG,"p1_3 = " + p1_3);
 
 
-        Log.d(LOGTAG,"start scan 3");
-        moveTo(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
-        String p1_2 = scanBarcode(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068,1);
-        p1_2_con = p1_2.split(", ");
-        double py3 = Double.parseDouble(p1_2_con[1]);
-        Log.d(LOGTAG,"p1_2 = " + p1_2);
-
-
-        moveTo(10.50,-6.45,5.40,0,0,0,0);
-
-        Log.d(LOGTAG,"start scan 4");
-        String p2_2 = scanBarcode(11.49,-8,5,0,0,0,1,4);
-        p2_2_con = p2_2.split(", ");
-        double qz3 = Double.parseDouble(p2_2_con[1]);
-        Log.d(LOGTAG,"p1_2 = " + p2_2);
-
-
-        Log.d(LOGTAG,"start scan 5");
-        String p2_3 = scanBarcode(11,-7.7,5.44,0.7,0,0.7,0 ,5);
-        p2_3_con = p2_3.split(", ");
-        double qy3 = Double.parseDouble(p2_3_con[1]);
-        Log.d(LOGTAG,"p2_2 = " + p2_3);
-
-
-        Log.d(LOGTAG,"start scan 6");
-        String p2_1 = scanBarcode(10.41,-7.5,4.7,0,0,1,0,3);
-        p2_1_con = p2_1.split(", ");
-        double qx3 = Double.parseDouble(p2_1_con[1]);
-        Log.d(LOGTAG,"p2_1 = " + p2_1);
-
-
-        moveTo(px3,py3,pz3,qx3,qy3,qz3,Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3)));
-        Mat ids = new Mat();
-        while (arv == 0) {
-            Mat source = api.getMatNavCam();
-            Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
-            List<Mat> corners = new ArrayList<>();
-            Aruco.detectMarkers(source, dictionary, corners, ids);
-            arv = (int) ids.get(0, 0)[0];
-        }
-
-        api.judgeSendDiscoveredAR(Integer.toString(arv));
+//        Log.d(LOGTAG,"start scan 3");
+//        String p1_2 = scanBarcode(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068,1);
+//        p1_2_con = p1_2.split(", ");
+//        double py3 = Double.parseDouble(p1_2_con[1]);
+//        Log.d(LOGTAG,"p1_2 = " + p1_2);
+//
+//
+//        moveTo(10.50,-6.45,5.40,0,0,0,0);
+//
+//        Log.d(LOGTAG,"start scan 4");
+//        String p2_2 = scanBarcode(11.49,-8,5,0,0,0,1,4);
+//        p2_2_con = p2_2.split(", ");
+//        double qz3 = Double.parseDouble(p2_2_con[1]);
+//        Log.d(LOGTAG,"p1_2 = " + p2_2);
+//
+//
+//        Log.d(LOGTAG,"start scan 5");
+//        String p2_3 = scanBarcode(11,-7.7,5.44,0.7,0,0.7,0 ,5);
+//        p2_3_con = p2_3.split(", ");
+//        double qy3 = Double.parseDouble(p2_3_con[1]);
+//        Log.d(LOGTAG,"p2_2 = " + p2_3);
+//
+//
+//        Log.d(LOGTAG,"start scan 6");
+//        String p2_1 = scanBarcode(10.41,-7.5,4.7,0,0,1,0,3);
+//        p2_1_con = p2_1.split(", ");
+//        double qx3 = Double.parseDouble(p2_1_con[1]);
+//        Log.d(LOGTAG,"p2_1 = " + p2_1);
+//
+//
+//        moveTo(px3,py3,pz3,qx3,qy3,qz3,Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3)));
+//        Mat ids = new Mat();
+//        while (arv == 0) {
+//            Mat source = api.getMatNavCam();
+//            Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
+//            List<Mat> corners = new ArrayList<>();
+//            Aruco.detectMarkers(source, dictionary, corners, ids);
+//            arv = (int) ids.get(0, 0)[0];
+//        }
+//
+//        api.judgeSendDiscoveredAR(Integer.toString(arv));
         api.laserControl(true);
         api.judgeSendFinishSimulation();
 
@@ -168,6 +169,7 @@ public class MainService extends KiboRpcService {
                                double qua_w,int no){
         int loopMax = 10;
         int loop = 0;
+        moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
         Bitmap snapshot = api.getBitmapNavCam();
         String value = detectQrcode(snapshot);
         double viewP = 0.025;
@@ -250,10 +252,12 @@ public class MainService extends KiboRpcService {
                 + BigDecimal.valueOf(qua_z).toPlainString() + ","
                 + BigDecimal.valueOf(qua_w).toPlainString() + ","
                 + "}";
-        Log.i(MainService.LOGTAG, mes);
 
         Result result = this.api.moveTo(point, quaternion, true);
         int loopCounter = 0;
+        Log.i(MainService.LOGTAG, "MoveTo Result: " + result.getStatus().toString());
+        Log.i(MainService.LOGTAG, "MoveTo Do Params: " + mes);
+
         while (!result.hasSucceeded() || loopCounter < LOOP_MAX) {
             result = this.api.moveTo(point, quaternion, true);
             ++loopCounter;
