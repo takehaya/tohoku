@@ -9,13 +9,13 @@ import com.google.zxing.MultiFormatReader;
 import com.google.zxing.RGBLuminanceSource;
 import com.google.zxing.Reader;
 import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.qrcode.QRCodeReader;
 
+import org.opencv.android.Utils;
 import org.opencv.aruco.Aruco;
 import org.opencv.aruco.Dictionary;
 import org.opencv.core.Mat;
-import org.opencv.calib3d.Calib3d;
-//import org.opencv.android.Utils;
-//import org.opencv.objdetect.QRCodeDetector;
+import org.opencv.imgproc.Imgproc;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -95,7 +95,7 @@ public class MainService extends KiboRpcService {
 
 
         Vec3 road1_1=new Vec3(11.15,-4.8,4.55);
-        Vec3 target1_3=new Vec3(11,-5.5,4.55-0.1);
+        Vec3 target1_3=new Vec3(11,-5.5,4.55-0.3);
         Vec3 target1_1=new Vec3(11.3+0.1,-5.7,4.5);
         Vec3 target1_2=new Vec3(11,-6,5.35+0.1);
 
@@ -182,7 +182,7 @@ public class MainService extends KiboRpcService {
 
     private String scanBarcode(int no){
         Log.d(LOGTAG,"start scanBarcode");
-        Bitmap snapshot = api.getBitmapNavCam();
+        Mat snapshot = api.getMatNavCam();
         String value = detectQrcode(snapshot);
         if (value != "error") {
             api.judgeSendDiscoveredQR(no , value);
@@ -201,7 +201,7 @@ public class MainService extends KiboRpcService {
         int loopMax = 10;
         int loop = 0;
         moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
-        Bitmap snapshot = api.getBitmapNavCam();
+        Mat snapshot = api.getMatNavCam();
         String value = detectQrcode(snapshot);
         double viewP = 0.025;
         while (value == "error" && loop < loopMax) {
@@ -214,7 +214,7 @@ public class MainService extends KiboRpcService {
             else if (loop%8 == 6) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y,qua_z + viewP,qua_w);
             else if (loop%8 == 7) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y + viewP,qua_z + viewP,qua_w);
             else  moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
-            snapshot = api.getBitmapNavCam();
+            snapshot = api.getMatNavCam();
             value = detectQrcode(snapshot);
             loop++;
         }
@@ -230,29 +230,34 @@ public class MainService extends KiboRpcService {
 
 
 
-    private String detectQrcode(Bitmap bitmap) {
-        // Bitmap のサイズを取得して、ピクセルデータを取得する
+    private String detectQrcode(Mat mat) {
+        Imgproc.threshold(mat, mat, 0.0, 255.0,
+                Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
+        Bitmap bitmap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(mat, bitmap);
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
+
         int[] pixels = new int[width * height];
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+        Log.d(LOGTAG, "detectQrcode try");
 
         try {
             // zxing で扱える BinaryBitmap形式に変換する
             LuminanceSource source = new RGBLuminanceSource(width, height, pixels);
             BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
             // zxing で画像データを読み込み解析する
-            Reader reader = new MultiFormatReader();
+            Reader reader = new QRCodeReader();
             com.google.zxing.Result decodeResult = reader.decode(binaryBitmap);
             // 解析結果を取得する
             String result = decodeResult.getText();
             if(!(0 < result.length())) {
                 return "error";
             }
-            Log.d("readQR", result);
+            Log.d(LOGTAG,"readQR"+result);
             return result;
         } catch (Exception e) {
-            Log.d("readQR", e.getLocalizedMessage());
+            Log.d(LOGTAG, "readQR"+ e.getLocalizedMessage());
             return "error";
         }
     }
