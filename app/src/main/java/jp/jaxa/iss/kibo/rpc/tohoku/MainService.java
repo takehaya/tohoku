@@ -15,6 +15,7 @@ import org.opencv.android.Utils;
 import org.opencv.aruco.Aruco;
 import org.opencv.aruco.Dictionary;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.math.BigDecimal;
@@ -95,7 +96,7 @@ public class MainService extends KiboRpcService {
 
 
         Vec3 road1_1=new Vec3(11.15,-4.8,4.55);
-        Vec3 target1_3=new Vec3(11,-5.5,4.55-0.3);
+        Vec3 target1_3=new Vec3(11,-5.5,4.55-0.2);
         Vec3 target1_1=new Vec3(11.3+0.1,-5.7,4.5);
         Vec3 target1_2=new Vec3(11,-6,5.35+0.1);
 
@@ -201,7 +202,7 @@ public class MainService extends KiboRpcService {
         int loopMax = 10;
         int loop = 0;
         moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
-        Mat snapshot = api.getMatNavCam();
+        Mat snapshot = tryMatNavCam();
         String value = detectQrcode(snapshot);
         double viewP = 0.025;
         while (value == "error" && loop < loopMax) {
@@ -214,7 +215,7 @@ public class MainService extends KiboRpcService {
             else if (loop%8 == 6) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y,qua_z + viewP,qua_w);
             else if (loop%8 == 7) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y + viewP,qua_z + viewP,qua_w);
             else  moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
-            snapshot = api.getMatNavCam();
+            snapshot = tryMatNavCam();
             value = detectQrcode(snapshot);
             loop++;
         }
@@ -231,6 +232,11 @@ public class MainService extends KiboRpcService {
 
 
     private String detectQrcode(Mat mat) {
+        if(mat == null){
+            return "error";
+        }
+
+        Imgproc.GaussianBlur(mat, mat, new Size(mat.width(), mat.height()), 0);
         Imgproc.threshold(mat, mat, 0.0, 255.0,
                 Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
         Bitmap bitmap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
@@ -260,6 +266,19 @@ public class MainService extends KiboRpcService {
             Log.d(LOGTAG, "readQR"+ e.getLocalizedMessage());
             return "error";
         }
+    }
+
+    private Mat tryMatNavCam() {
+
+        final int LOOP_MAX = 3;
+
+        Mat result = this.api.getMatNavCam();;
+        int loopCounter = 0;
+        while (result == null || loopCounter < LOOP_MAX) {
+            result = this.api.getMatNavCam();
+            ++loopCounter;
+        }
+        return result;
     }
 
     //-----------------basic functions----------------------
