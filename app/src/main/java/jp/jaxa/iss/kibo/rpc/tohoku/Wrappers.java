@@ -31,4 +31,8 @@ public class Wrappers {
             ++loopCounter;
         }
     }
+
+    public void moveTo(Point pos,Quaternion qua){
+        this.moveTo(pos.getX(),pos.getY(),pos.getZ(),qua.getX(),qua.getY(),qua.getZ(),qua.getW());
+    }
 }
