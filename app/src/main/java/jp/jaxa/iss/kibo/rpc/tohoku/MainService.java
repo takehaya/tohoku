@@ -29,7 +29,7 @@ public class MainService extends KiboRpcService {
         new KeepZone(10.75, -4.9, 4.8, 10.95, -4.7, 5.0, false),
         new KeepZone(10.75, -6.5, 3.9, 11.95, -6.4, 5.9, false),
         new KeepZone(9.95, -7.2, 3.9, 10.85, -7.1, 5.9, false),
-        new KeepZone(10.10, -8.6, 5.4, 11.1, -83, 5.9, false),
+        new KeepZone(10.10, -8.6, 5.4, 11.1, -8.3, 5.9, false),
         new KeepZone(11.45, -9.0, 4.1, 11.95, -8.5, 5.1, false),
         new KeepZone(9.95, -9.1, 4.6, 10.45, -8.5, 5.1, false),
         new KeepZone(10.95, -8.4, 4.9, 11.15, -8.2, 5.1, false),
@@ -53,15 +53,28 @@ public class MainService extends KiboRpcService {
 //
 //        wraps.moveTo(11.1, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
 
-        Vec3 road1=new Vec3(11.15,-4.8,4.55);
+        //TODO: もっと的に近付ける
+        Vec3 road1_1=new Vec3(11.15,-4.8,4.55);
         Vec3 target1_3=new Vec3(11,-5.5,4.55-0.1);
         Vec3 target1_1=new Vec3(11.3+0.1,-5.7,4.5);
         Vec3 target1_2=new Vec3(11,-6,5.35+0.1);
 
-        moveTo(road1, new Quaternion(0, 0, 0.707f, -0.707f));
+        moveTo(road1_1, new Quaternion(0, 0, 0.707f, -0.707f));
         moveTo(target1_3, new Quaternion(0, 0.707f, 0, 0.707f));
         moveTo(target1_1, new Quaternion(0, 0, 0, -1));
         moveTo(target1_2, new Quaternion(0, -0.707f, 0, 0.707f));
+
+        Vec3 road2_1=new Vec3(10.5,-6.45,5.1);
+        Vec3 road2_2=new Vec3(11.35,-7.2,4.9);
+        Vec3 target2_1=new Vec3(10.48,-7.5,4.7);
+        Vec3 target2_3=new Vec3(11,-7.7,5.37);
+        Vec3 target2_2=new Vec3(11.32,-8,5);
+
+        moveTo(road2_1,new Quaternion(0, 0, 0.707f, -0.707f));
+        moveTo(road2_2,new Quaternion(0, 0, 0.707f, -0.707f));
+        moveTo(target2_1,new Quaternion(0, 0, 0,1));
+        moveTo(target2_2,new Quaternion(0, 0, 0,-1));
+        moveTo(target2_3,new Quaternion(0, -0.707f, 0, 0.707f));
 
 
 //        Bitmap snapshot = api.getBitmapNavCam();
