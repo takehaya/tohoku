@@ -110,8 +110,8 @@ public class MainService extends KiboRpcService {
 
 
         Vec3 road1_1_v=new Vec3(11.15,-4.8,4.55);
-        Vec3 target1_3_v=new Vec3(11,-5.5,4.55-0.3);
-        Vec3 target1_1_v=new Vec3(11.3+0.2,-5.7,4.5);
+        Vec3 target1_3_v=new Vec3(11,-5.5,4.55-0.2);
+        Vec3 target1_1_v=new Vec3(11.3+0.3,-5.7,4.5);
         Vec3 target1_2_v=new Vec3(11,-6,5.35+0.3);
 
         WrapQuaternion road1_1_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
@@ -365,6 +365,7 @@ public class MainService extends KiboRpcService {
 
     private String detectQrcode(Mat nmat) {
         if(nmat == null){
+            Log.d(LOGTAG,"nmat == null");
             return "error";
         }
         // TODO :: opencv screenig task
@@ -372,7 +373,8 @@ public class MainService extends KiboRpcService {
 
         Mat optmat = preQRProcessing(nmat);
         if(optmat == null){
-            return "error";
+            Log.d(LOGTAG,"optmat == null");
+            optmat = nmat;
         }
 
 //        Imgproc.medianBlur(mat, mat, 5);
@@ -413,6 +415,7 @@ public class MainService extends KiboRpcService {
 
         Mat point = new Mat();
         Boolean isDetect = detector.detect(mat, point);
+        Log.i(MainService.LOGTAG, "preQRProcessing isDetect: " + isDetect);
         if (isDetect){
             Mat nmat = new Mat(300,300,CvType.CV_8UC3);
             float distPoint[] = new float[]{0,300, 0,0 ,0,300 ,300,300};//Lower left, upper left, upper right, lower left.
@@ -459,10 +462,13 @@ public class MainService extends KiboRpcService {
     private Mat tryMatNavCam() {
         final int LOOP_MAX = 3;
 
-        Mat result = this.api.getMatNavCam();;
+        Mat result = this.api.getMatNavCam();
         int loopCounter = 0;
+        Log.i(MainService.LOGTAG, "tryMatNavCam Result: " + !(result!=null));
+
         while (result == null && loopCounter < LOOP_MAX) {
             result = this.api.getMatNavCam();
+            Log.i(MainService.LOGTAG, "tryMatNavCam Result: " + !(result!=null));
             ++loopCounter;
         }
         return result;
@@ -507,6 +513,8 @@ public class MainService extends KiboRpcService {
 
         while (!result.hasSucceeded() && loopCounter < LOOP_MAX) {
             result = this.api.moveTo(point, quaternion, true);
+            Log.i(MainService.LOGTAG, "MoveTo Result: " + result.getStatus().toString());
+            Log.i(MainService.LOGTAG, "MoveTo Do Params: " + mes);
             ++loopCounter;
         }
         return result.getStatus();
@@ -547,6 +555,8 @@ public class MainService extends KiboRpcService {
 
         while (!result.hasSucceeded() && loopCounter < LOOP_MAX) {
             result = this.api.relativeMoveTo(point, quaternion, true);
+            Log.i(MainService.LOGTAG, "relativeMoveTo Result: " + result.getStatus().toString());
+            Log.i(MainService.LOGTAG, "relativeMoveTo Do Params: " + mes);
             ++loopCounter;
         }
         return result.getStatus();

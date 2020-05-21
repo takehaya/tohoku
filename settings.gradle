@@ -1,2 +1,3 @@
 include ':app', ':guest_science_library', ':kibo_rpc_api'
 include ':openCVLibrary344'
+include ':openCVLibrary430'
