@@ -4,8 +4,8 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.google.zxing.BinaryBitmap;
+import com.google.zxing.DecodeHintType;
 import com.google.zxing.LuminanceSource;
-import com.google.zxing.MultiFormatReader;
 import com.google.zxing.RGBLuminanceSource;
 import com.google.zxing.Reader;
 import com.google.zxing.common.HybridBinarizer;
@@ -14,19 +14,32 @@ import com.google.zxing.qrcode.QRCodeReader;
 import org.opencv.android.Utils;
 import org.opencv.aruco.Aruco;
 import org.opencv.aruco.Dictionary;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.QRCodeDetector;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+//import boofcv.abst.fiducial.QrCodeDetector;
+//import boofcv.alg.fiducial.qrcode.QrCode;
+//import boofcv.android.ConvertBitmap;
+//import boofcv.factory.fiducial.FactoryFiducial;
+//import boofcv.struct.image.FactoryImage;
+//import boofcv.struct.image.GrayU8;
 import gov.nasa.arc.astrobee.Result;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
 import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
+
+
 /**
  * Class meant to handle commands from the Ground Data System and execute them in Astrobee
  */
@@ -93,48 +106,24 @@ public class MainService extends KiboRpcService {
 
         double px3 = 0,py3 = 0,pz3=0,qx3 = 0,qy3=0,qz3=0;
         int arv = 0;
+        final int LOOPSIZE = 3;
 
 
         Vec3 road1_1_v=new Vec3(11.15,-4.8,4.55);
-        Vec3 target1_3_v=new Vec3(11,-5.5,4.55-0.2);
-        Vec3 target1_1_v=new Vec3(11.3+0.1,-5.7,4.5);
-        Vec3 target1_2_v=new Vec3(11,-6,5.35+0.1);
+        Vec3 target1_3_v=new Vec3(11,-5.5,4.55-0.3);
+        Vec3 target1_1_v=new Vec3(11.3+0.2,-5.7,4.5);
+        Vec3 target1_2_v=new Vec3(11,-6,5.35+0.3);
 
         WrapQuaternion road1_1_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
         WrapQuaternion target1_3_q = new WrapQuaternion(0, 0.707f, 0, 0.707f);
         WrapQuaternion target1_1_q = new WrapQuaternion(0, 0, 0, -1);
         WrapQuaternion target1_2_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
 
-        moveTo(road1_1_v, road1_1_q);
-        moveTo(target1_3_v, target1_3_q);
-        String p1_3 = scanBarcodeRelation(target1_3_q, QRInfoType.PosZ);
-        Log.d(LOGTAG,"p1_3 = " + p1_3);
-        if (p1_3 != "error"){
-            p1_3_con = p1_3.split(", ");
-            pz3 = Double.parseDouble(p1_3_con[1]);
-        }
-
-        moveTo(target1_1_v, target1_1_q);
-        String p1_1 = scanBarcodeRelation(target1_1_q, QRInfoType.PosX);
-        Log.d(LOGTAG,"p1_1 = " + p1_1);
-        if (p1_1 != "error"){
-            p1_1_con = p1_1.split(", ");
-            px3 = Double.parseDouble(p1_1_con[1]);
-        }
-
-        moveTo(target1_2_v, target1_2_q);
-        String p1_2 =  scanBarcodeRelation(target1_2_q, QRInfoType.PosY);
-        Log.d(LOGTAG,"p1_2 = " + p1_2);
-        if (p1_2 != "error"){
-            p1_2_con = p1_2.split(", ");
-            py3 = Double.parseDouble(p1_2_con[1]);
-        }
-
-        Vec3 road2_1_v=new Vec3(10.5,-6.45,5.1);
-        Vec3 road2_2_v=new Vec3(11.35,-7.2,4.9);
-        Vec3 target2_1_v=new Vec3(10.48,-7.5,4.7);
-        Vec3 target2_3_v=new Vec3(11,-7.7,5.37);
-        Vec3 target2_2_v=new Vec3(11.32,-8,5);
+        Vec3 road2_1_v = new Vec3(10.5,-6.45,5.1);
+        Vec3 road2_2_v = new Vec3(11.35,-7.2,4.9);
+        Vec3 target2_1_v = new Vec3(10.48,-7.5,4.7);
+        Vec3 target2_3_v = new Vec3(11,-7.7,5.37);
+        Vec3 target2_2_v = new Vec3(11.32,-8,5);
 
         WrapQuaternion road2_1_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
         WrapQuaternion road2_2_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
@@ -142,31 +131,99 @@ public class MainService extends KiboRpcService {
         WrapQuaternion target2_2_q = new WrapQuaternion(0, 0, 0,-1);
         WrapQuaternion target2_3_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
 
+        moveTo(road1_1_v, road1_1_q);
+
+        int loopCounter = 0;
+        String p1_3 = "";
+        do{
+            moveTo(target1_3_v, target1_3_q);
+            p1_3 = scanBarcode(QRInfoType.PosZ);
+            Log.d(LOGTAG,"p1_3 = " + p1_3);
+            if (p1_3 != "error"){
+                p1_3_con = p1_3.split(", ");
+                pz3 = Double.parseDouble(p1_3_con[1]);
+            }
+            loopCounter++;
+        }while (p1_3.equals("error") &&loopCounter<LOOPSIZE);
+
+        loopCounter = 0;
+
+        String p1_1 = "";
+        do{
+            moveTo(target1_1_v, target1_1_q);
+            p1_1 = scanBarcode(QRInfoType.PosX);
+
+            Log.d(LOGTAG,"p1_1 = " + p1_1);
+            if (p1_1 != "error"){
+                p1_1_con = p1_1.split(", ");
+                px3 = Double.parseDouble(p1_1_con[1]);
+            }
+            loopCounter++;
+        }while (p1_1.equals("error") &&loopCounter<LOOPSIZE);
+        loopCounter = 0;
+
+
+        String p1_2  = "";
+        do{
+            moveTo(target1_2_v, target1_2_q);
+            p1_2 =  scanBarcode(QRInfoType.PosY);
+
+            Log.d(LOGTAG,"p1_2 = " + p1_2);
+            if (p1_2 != "error"){
+                p1_2_con = p1_2.split(", ");
+                py3 = Double.parseDouble(p1_2_con[1]);
+            }
+            loopCounter++;
+        }while (p1_2.equals("error") &&loopCounter<LOOPSIZE);
+        loopCounter = 0;
+
+
         moveTo(road2_1_v, road2_1_q);
         moveTo(road2_2_v, road2_2_q);
-        moveTo(target2_1_v, target2_1_q);
-        String p2_1 = scanBarcodeRelation(target2_1_q, QRInfoType.QuaX);
-        Log.d(LOGTAG,"p2_1 = " + p2_1);
-        if (p2_1 != "error"){
-            p2_1_con = p2_1.split(", ");
-            qx3 = Double.parseDouble(p2_1_con[1]);
-        }
 
-        moveTo(target2_3_v, target2_2_q);
-        String p2_2 = scanBarcodeRelation(target2_2_q, QRInfoType.QuaY);
-        Log.d(LOGTAG,"p2_2 = " + p2_2);
-        if (p2_2 != "error"){
-            p2_2_con = p2_2.split(", ");
-            qy3 = Double.parseDouble(p2_2_con[1]);
-        }
 
-        moveTo(target2_2_v, target2_3_q);
-        String p2_3 = scanBarcodeRelation(target2_3_q, QRInfoType.QuaZ);
-        Log.d(LOGTAG,"p2_3 = " + p2_3);
-        if (p2_3 != "error"){
-            p2_3_con = p2_3.split(", ");
-            qz3 = Double.parseDouble(p2_3_con[1]);
-        }
+        String p2_1  = "";
+        do{
+            moveTo(target2_1_v, target2_1_q);
+            p2_1 = scanBarcode(QRInfoType.QuaX);
+            Log.d(LOGTAG,"p2_1 = " + p2_1);
+            if (p2_1 != "error"){
+                p2_1_con = p2_1.split(", ");
+                qx3 = Double.parseDouble(p2_1_con[1]);
+            }
+            loopCounter++;
+        }while (p2_1.equals("error") &&loopCounter<LOOPSIZE);
+        loopCounter = 0;
+
+
+        String p2_2  = "";
+        do{
+            moveTo(target2_2_v, target2_2_q);
+            p2_2 = scanBarcode(QRInfoType.QuaY);
+            Log.d(LOGTAG,"p2_2 = " + p2_2);
+            if (p2_2 != "error"){
+                p2_2_con = p2_2.split(", ");
+                qy3 = Double.parseDouble(p2_2_con[1]);
+            }
+            loopCounter++;
+        }while (p2_2.equals("error") &&loopCounter<LOOPSIZE);
+        loopCounter = 0;
+
+
+        String p2_3  = "";
+        do{
+            moveTo(target2_3_v, target2_3_q);
+            p2_3 = scanBarcode(QRInfoType.QuaZ);
+            Log.d(LOGTAG,"p2_3 = " + p2_3);
+            if (p2_3 != "error"){
+                p2_3_con = p2_3.split(", ");
+                qz3 = Double.parseDouble(p2_3_con[1]);
+            }
+
+            loopCounter++;
+        }while (p2_3.equals("error") &&loopCounter<LOOPSIZE);
+        loopCounter = 0;
+
 
         moveTo(px3,py3,pz3,qx3,qy3,qz3,Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3)));
         Mat ids = new Mat();
@@ -206,7 +263,30 @@ public class MainService extends KiboRpcService {
         return value;
     }
 
-    private String scanBarcodeMoveTo(Vec3 vec, WrapQuaternion qua,  QRInfoType type){
+    private String scanTryBarcode(Vec3 vec, WrapQuaternion qua, QRInfoType type){
+        Log.d(LOGTAG,"start scanTryBarcode");
+        final int LOOP_MAX = 3;
+        int loopCounter = 0;
+        String value = "";
+
+        while (loopCounter < LOOP_MAX || value == "error") {
+            Mat snapshot = api.getMatNavCam();
+            value = detectQrcode(snapshot);
+            if (value != "error") {
+                api.judgeSendDiscoveredQR(type.getInt() , value);
+                Log.d(LOGTAG,"valuesQR" + value);
+            }
+            else{
+                Log.d(LOGTAG,"valuesQR = error");
+            }
+            moveTo(vec, qua);
+            loopCounter++;
+        }
+        return value;
+    }
+
+
+    private String scanBarcodeMoveTo(Vec3 vec, WrapQuaternion qua, QRInfoType type){
         return scanBarcodeMoveTo(vec.getX(), vec.getY(), vec.getZ(),
                 (double)qua.getX(), (double)qua.getY(), (double)qua.getZ(), (double)qua.getW(),
                 type
@@ -283,16 +363,22 @@ public class MainService extends KiboRpcService {
     }
 
 
-    private String detectQrcode(Mat mat) {
-        if(mat == null){
+    private String detectQrcode(Mat nmat) {
+        if(nmat == null){
+            return "error";
+        }
+        // TODO :: opencv screenig task
+        // debulr(?)
+
+        Mat optmat = preQRProcessing(nmat);
+        if(optmat == null){
             return "error";
         }
 
-        Imgproc.GaussianBlur(mat, mat, new Size(mat.width(), mat.height()), 0);
-        Imgproc.threshold(mat, mat, 0.0, 255.0,
-                Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
-        Bitmap bitmap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(mat, bitmap);
+//        Imgproc.medianBlur(mat, mat, 5);
+//        Imgproc.adaptiveThreshold(mat, mat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
+        Bitmap bitmap = Bitmap.createBitmap(optmat.width(), optmat.height(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(optmat, bitmap);
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
 
@@ -306,7 +392,10 @@ public class MainService extends KiboRpcService {
             BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
             // zxing で画像データを読み込み解析する
             Reader reader = new QRCodeReader();
-            com.google.zxing.Result decodeResult = reader.decode(binaryBitmap);
+            Map<DecodeHintType, Object> hintMap = new HashMap<DecodeHintType, Object>();
+            hintMap.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
+
+            com.google.zxing.Result decodeResult = reader.decode(binaryBitmap, hintMap);
             // 解析結果を取得する
             String result = decodeResult.getText();
             if(!(0 < result.length())) {
@@ -319,13 +408,60 @@ public class MainService extends KiboRpcService {
             return "error";
         }
     }
+    private Mat preQRProcessing(Mat mat){
+        QRCodeDetector detector = new QRCodeDetector();
+
+        Mat point = new Mat();
+        Boolean isDetect = detector.detect(mat, point);
+        if (isDetect){
+            Mat nmat = new Mat(300,300,CvType.CV_8UC3);
+            float distPoint[] = new float[]{0,300, 0,0 ,0,300 ,300,300};//Lower left, upper left, upper right, lower left.
+            Mat dstmat = new Mat(4,2, CvType.CV_32F);
+            Mat rmat = Imgproc.getPerspectiveTransform(point, dstmat);
+            Imgproc.warpPerspective(mat, nmat, rmat, nmat.size());
+
+            return nmat;
+        }
+        return null;
+    }
+
+//    private String detectQrcode(Mat mat) {
+//        if(mat == null){
+//            return "error";
+//        }
+//
+//        Bitmap bitmap = Bitmap.createBitmap(mat.width(), mat.height(), Bitmap.Config.ARGB_8888);
+//        Utils.matToBitmap(mat, bitmap);
+//
+//        Log.d(LOGTAG, "detectQrcode try");
+//
+//        try {
+//            // zxing で扱える BinaryBitmap形式に変換する
+//            GrayU8 gray = ConvertBitmap.bitmapToGray(bitmap, (GrayU8)null, null);
+//            QrCodeDetector<GrayU8> detector = FactoryFiducial.qrcode(null, GrayU8.class);
+//            detector.process(gray);
+//            List<QrCode> detections = detector.getDetections();
+//
+//            // 解析結果を取得する
+//            String result = detections.get(1).message;
+//
+//            if(!(0 < result.length())) {
+//                return "error";
+//            }
+//            Log.d(LOGTAG,"readQR"+result);
+//            return result;
+//        } catch (Exception e) {
+//            Log.d(LOGTAG, "readQR"+ e.getLocalizedMessage());
+//            return "error";
+//        }
+//    }
 
     private Mat tryMatNavCam() {
         final int LOOP_MAX = 3;
 
         Mat result = this.api.getMatNavCam();;
         int loopCounter = 0;
-        while (result == null || loopCounter < LOOP_MAX) {
+        while (result == null && loopCounter < LOOP_MAX) {
             result = this.api.getMatNavCam();
             ++loopCounter;
         }
@@ -334,20 +470,20 @@ public class MainService extends KiboRpcService {
 
     //-----------------basic functions----------------------
 
-    public Result moveTo(Vec3 vec, WrapQuaternion quat) {
+    public Result.Status moveTo(Vec3 vec, WrapQuaternion quat) {
         return moveToRun(
                 vec.getX(), vec.getY(), vec.getZ(),
                 quat.getX(),quat.getY(), quat.getZ(), quat.getW()
         );
     }
-    public Result moveTo(double pos_x, double pos_y, double pos_z,
+    public Result.Status moveTo(double pos_x, double pos_y, double pos_z,
                        double qua_x, double qua_y, double qua_z, double qua_w) {
         return moveToRun(
                 pos_x, pos_y, pos_z,
                 (float) qua_x, (float)qua_y, (float)qua_z, (float)qua_w
         );
     }
-    private Result moveToRun(double pos_x, double pos_y, double pos_z,
+    private Result.Status moveToRun(double pos_x, double pos_y, double pos_z,
                            float qua_x, float qua_y, float qua_z, float qua_w) {
 
         final int LOOP_MAX = 3;
@@ -369,11 +505,11 @@ public class MainService extends KiboRpcService {
         Log.i(MainService.LOGTAG, "MoveTo Result: " + result.getStatus().toString());
         Log.i(MainService.LOGTAG, "MoveTo Do Params: " + mes);
 
-        while (!result.hasSucceeded() || loopCounter < LOOP_MAX) {
+        while (!result.hasSucceeded() && loopCounter < LOOP_MAX) {
             result = this.api.moveTo(point, quaternion, true);
             ++loopCounter;
         }
-        return result;
+        return result.getStatus();
     }
 
     public Result.Status relativeMoveTo(Vec3 vec, WrapQuaternion quat) {
@@ -409,7 +545,7 @@ public class MainService extends KiboRpcService {
         Log.i(MainService.LOGTAG, "relativeMoveTo Result: " + result.getStatus().toString());
         Log.i(MainService.LOGTAG, "relativeMoveTo Do Params: " + mes);
 
-        while (!result.hasSucceeded() || loopCounter < LOOP_MAX) {
+        while (!result.hasSucceeded() && loopCounter < LOOP_MAX) {
             result = this.api.relativeMoveTo(point, quaternion, true);
             ++loopCounter;
         }
