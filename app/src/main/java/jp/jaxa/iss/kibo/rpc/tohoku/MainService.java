@@ -111,8 +111,7 @@ public class MainService extends KiboRpcService {
 
         WrapQuaternion road2_1_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
         WrapQuaternion road2_2_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
-        WrapQuaternion target2_1_q = new WrapQuaternion(0, 0, 0,1);
-//        WrapQuaternion target2_1_q = new WrapQuaternion(0, 0, 1,0);
+        WrapQuaternion target2_1_q = new WrapQuaternion(0, 0, 1,0);
 
         WrapQuaternion target2_2_q = new WrapQuaternion(0, 0, 0,-1);
         WrapQuaternion target2_3_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
@@ -385,10 +384,8 @@ public class MainService extends KiboRpcService {
                     Mat detectPoint = opencvDetectQrcode(nmat);
                     if (detectPoint != null ){
                         nmat = pointCuting(nmat, detectPoint);
-                        result = opencvDecodeQrcode(nmat, detectPoint);
-                        if (result.equals("error")){
-                            continue;
-                        }
+                        nmat = sharpenFilter(nmat);
+                        continue;
                     }else{
                         ImageWrite(nmat, key+"point");
                         Mat point = rectTrimPoint(nmat);
@@ -569,58 +566,7 @@ public class MainService extends KiboRpcService {
 
         return destination;
     }
-//    private String detectQrcode(Mat nmat, String key) {
-//        Log.d(LOGTAG,"start detectQrcode");
-//
-//        if(nmat == null){
-//            Log.d(LOGTAG,"nmat == null");
-//            return "error";
-//        }
-//
-//        ImageWrite(nmat, key);
-//        Mat optmat = preQRProcessing(nmat);
-//        ImageWrite(optmat, key);
-//
-//        if(optmat == null){
-//            Log.d(LOGTAG,"optmat == null");
-//            optmat = nmat;
-//        }else{
-//            Log.d(LOGTAG, "optmap:" + optmat.dump());
-//        }
-//
-////        Imgproc.medianBlur(mat, mat, 5);
-////        Imgproc.adaptiveThreshold(mat, mat, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-//        Bitmap bitmap = Bitmap.createBitmap(optmat.width(), optmat.height(), Bitmap.Config.ARGB_8888);
-//        Utils.matToBitmap(optmat, bitmap);
-//        int width = bitmap.getWidth();
-//        int height = bitmap.getHeight();
-//
-//        int[] pixels = new int[width * height];
-//        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-//        Log.d(LOGTAG, "detectQrcode try");
-//
-//        try {
-//            // zxing で扱える BinaryBitmap形式に変換する
-//            LuminanceSource source = new RGBLuminanceSource(width, height, pixels);
-//            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
-//            // zxing で画像データを読み込み解析する
-//            Reader reader = new QRCodeReader();
-//            Map<DecodeHintType, Object> hintMap = new HashMap<DecodeHintType, Object>();
-//            hintMap.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
-//
-//            com.google.zxing.Result decodeResult = reader.decode(binaryBitmap, hintMap);
-//            // 解析結果を取得する
-//            String result = decodeResult.getText();
-//            if(!(0 < result.length()) || result == null) {
-//                return "error";
-//            }
-//            Log.d(LOGTAG,"readQR"+result);
-//            return result;
-//        } catch (Exception e) {
-//            Log.d(LOGTAG, "exception readQR"+ e.getLocalizedMessage());
-//            return "error";
-//        }
-//    }
+
     private static Mat preQRProcessing(Mat mat){
         QRCodeDetector detector = new QRCodeDetector();
 
