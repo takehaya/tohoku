@@ -72,16 +72,9 @@ public class MainService extends KiboRpcService {
 
     @Override
     protected void runPlan1() {
+        //いい感じに切り替えておいてください
         //runPlan2();
         runPlan3();
-        //
-        //        wraps.moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
-        //        wraps.moveTo(11, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
-        //        wraps.moveTo(11, -5.7, 5, 0, 0, -0.7071068, 0.7071068);
-        //        wraps.moveTo(11.5, -5.7, 4.5, 0, 0, 0, 1);
-        //        wraps.moveTo(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
-        //
-        //        wraps.moveTo(11.1, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
 
     }
 
@@ -100,8 +93,6 @@ public class MainService extends KiboRpcService {
         int arv = 0;
         final int LOOPSIZE = 3;
 
-
-
         double distance = 0.12;
         Vec3 road1_1_v = new Vec3(11.15, -4.8, 4.55);
         Vec3 target1_1_v = new Vec3(11.5 - distance, -5.7, 4.5);
@@ -112,7 +103,6 @@ public class MainService extends KiboRpcService {
         WrapQuaternion target1_3_q = new WrapQuaternion(0, 0.707f, 0, 0.707f);
         WrapQuaternion target1_1_q = new WrapQuaternion(0, 0, 0, -1);
         WrapQuaternion target1_2_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
-
 
         Vec3 road2_1_v = new Vec3(10.5, -6.45, 5.1);
         Vec3 road2_2_v = new Vec3(11.35, -7.3, 4.9);
@@ -173,7 +163,6 @@ public class MainService extends KiboRpcService {
 
         moveTo(road2_1_v, road2_1_q);
         moveTo(road2_2_v, road2_2_q);
-
 
         String p2_1  = "";
         do{
