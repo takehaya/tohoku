@@ -79,7 +79,7 @@ public class MainService extends KiboRpcService {
 
     @Override
     protected void runPlan1() {
-        runPlan2();
+        //runPlan2();
         //
         //        wraps.moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
         //        wraps.moveTo(11, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
@@ -89,8 +89,10 @@ public class MainService extends KiboRpcService {
         //
         //        wraps.moveTo(11.1, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
 
+        Log.i(LOGTAG, "apijudgeSendStart");
+        api.judgeSendStart();
         //TODO: もっと的に近付ける
-        double distance = 1.0;
+        double distance = 0.12;
         Vec3 road1_1 = new Vec3(11.15, -4.8, 4.55);
         Vec3 target1_1 = new Vec3(11.5 - distance, -5.7, 4.5);
         Vec3 target1_2 = new Vec3(11, -6, 5.55 - distance);
@@ -109,7 +111,7 @@ public class MainService extends KiboRpcService {
 
         moveTo(road2_1,new Quaternion(0, 0, 0.707f, -0.707f));
         moveTo(road2_2,new Quaternion(0, 0, 0.707f, -0.707f));
-        moveTo(target2_1,new Quaternion(0, 0, 0,1));
+        moveTo(target2_1,new Quaternion(0, 0, 1,0));
         moveTo(target2_2,new Quaternion(0, 0, 0,-1));
         moveTo(target2_3,new Quaternion(0, -0.707f, 0, 0.707f));
 
@@ -117,6 +119,9 @@ public class MainService extends KiboRpcService {
         Vec3 road3_2=new Vec3(11.95,-9.2,5.3);
         moveTo(road3_1,new Quaternion(0, 0, 0.707f, -0.707f));
         moveTo(road3_2,new Quaternion(0, 0, 0.707f, -0.707f));
+
+        api.laserControl(true);
+        api.judgeSendFinishSimulation();
     }
 
     @Override
@@ -135,7 +140,7 @@ public class MainService extends KiboRpcService {
         final int LOOPSIZE = 3;
 
 
-        double distance = 1.0;
+        double distance = 0.12;
         Vec3 road1_1_v = new Vec3(11.15, -4.8, 4.55);
         Vec3 target1_1_v = new Vec3(11.5 - distance, -5.7, 4.5);
         Vec3 target1_2_v = new Vec3(11, -6, 5.55 - distance);
@@ -157,7 +162,7 @@ public class MainService extends KiboRpcService {
 
         WrapQuaternion road2_1_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
         WrapQuaternion road2_2_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
-        WrapQuaternion target2_1_q = new WrapQuaternion(0, 0, 0,1);
+        WrapQuaternion target2_1_q = new WrapQuaternion(0, 0, 1,0);
         WrapQuaternion target2_2_q = new WrapQuaternion(0, 0, 0,-1);
         WrapQuaternion target2_3_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
 
@@ -263,6 +268,7 @@ public class MainService extends KiboRpcService {
             List<Mat> corners = new ArrayList<>();
             Aruco.detectMarkers(source, dictionary, corners, ids);
             arv = (int) ids.get(0, 0)[0];
+        }
 
         api.judgeSendDiscoveredAR(Integer.toString(arv));
         api.laserControl(true);
