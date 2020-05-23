@@ -69,7 +69,7 @@ public class MainService extends KiboRpcService {
             new KeepZone(11.45, -9.0, 4.1, 11.95, -8.5, 5.1, false),
             new KeepZone(9.95, -9.1, 4.6, 10.45, -8.5, 5.1, false),
             new KeepZone(10.95, -8.4, 4.9, 11.15, -8.2, 5.1, false),
-            new KeepZone(11.05, -9.9, 4.2, 11.25, -8.7, 4.4, false),
+            new KeepZone(11.05, -8.9, 4.2, 11.25, -8.7, 4.4, false),
             new KeepZone(10.45, -9.1, 4.6, 10.65, -8.9, 4.8, false),
             new KeepZone(10.25, -9.75, 4.2, 11.65, -3, 5.6, true)
     ));
@@ -88,7 +88,7 @@ public class MainService extends KiboRpcService {
         //        wraps.moveTo(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
         //
         //        wraps.moveTo(11.1, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
-        
+
         //TODO: もっと的に近付ける
         double distance = 1.0;
         Vec3 road1_1 = new Vec3(11.15, -4.8, 4.55);
@@ -112,6 +112,11 @@ public class MainService extends KiboRpcService {
         moveTo(target2_1,new Quaternion(0, 0, 0,1));
         moveTo(target2_2,new Quaternion(0, 0, 0,-1));
         moveTo(target2_3,new Quaternion(0, -0.707f, 0, 0.707f));
+
+        Vec3 road3_1 = new Vec3(11.45,-8.4,5.3);
+        Vec3 road3_2=new Vec3(11.95,-9.2,5.3);
+        moveTo(road3_1,new Quaternion(0, 0, 0.707f, -0.707f));
+        moveTo(road3_2,new Quaternion(0, 0, 0.707f, -0.707f));
     }
 
     @Override
@@ -258,7 +263,6 @@ public class MainService extends KiboRpcService {
             List<Mat> corners = new ArrayList<>();
             Aruco.detectMarkers(source, dictionary, corners, ids);
             arv = (int) ids.get(0, 0)[0];
-        }
 
         api.judgeSendDiscoveredAR(Integer.toString(arv));
         api.laserControl(true);
