@@ -77,4 +77,7 @@ public class Wrappers {
                 (float)qua_z, (float)qua_w);
         api.relativeMoveTo(point, quaternion, true);
     }
+    public void moveTo(Point pos,Quaternion qua){
+        this.moveTo(pos.getX(),pos.getY(),pos.getZ(),qua.getX(),qua.getY(),qua.getZ(),qua.getW());
+    }
 }
