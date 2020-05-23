@@ -237,4 +237,4 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.gitignore.io/api/java,linux,macos,python,windows,vagrant,code-java
-
+.vscode
