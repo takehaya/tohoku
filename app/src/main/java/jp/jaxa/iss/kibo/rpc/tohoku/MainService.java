@@ -388,7 +388,7 @@ public class MainService extends KiboRpcService {
                 String result = zxingDetectDecodeQrcode(nmat);
                 if (result.equals("error")){
                     Mat detectPoint = opencvDetectQrcode(nmat);
-                    if (detectPoint != null){
+                    if (detectPoint != null ){
                         nmat = pointCuting(nmat, detectPoint);
                         result = opencvDecodeQrcode(nmat, detectPoint);
                         if (result.equals("error")){
@@ -459,7 +459,9 @@ public class MainService extends KiboRpcService {
         Mat point = new Mat();
         Boolean isDetect = detector.detect(nmat, point);
         Log.d(LOGTAG, "opencvDetectQrcode isDetect : " + isDetect);
-
+        if (!isDetect){
+            return null;
+        }
         return point;
     }
 
@@ -502,14 +504,25 @@ public class MainService extends KiboRpcService {
         float distPoint[] = new float[]{0,400, 0,0 ,400,0 ,400,400};//Lower left, upper left, upper right, lower left.
         Mat dstmat = new Mat(4,2, CvType.CV_32F);
         dstmat.put(0,0, distPoint);
+        Log.d(LOGTAG,"dstmat.put done");
+        Log.d(LOGTAG,"point dump: " + point.dump());
+        Log.d(LOGTAG,"point depth: " + point.depth());
+        Log.d(LOGTAG,"dstmat dump: " + dstmat.dump());
+        Log.d(LOGTAG,"dstmat depth: " + dstmat.depth());
+
 
         Mat rmat = Imgproc.getPerspectiveTransform(point, dstmat);
+        Log.d(LOGTAG,"getPerspectiveTransform done");
+
         Imgproc.warpPerspective(nmat, mat, rmat, mat.size());
+        Log.d(LOGTAG,"warpPerspective done");
 
         return mat;
     }
 
     private Mat rectTrimPoint(Mat nmat){
+        Log.d(LOGTAG,"rectTrimPoint try");
+
         Mat fmap = new Mat();
 
         Imgproc.cvtColor(nmat, fmap, Imgproc.COLOR_BGR2GRAY);
