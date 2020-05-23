@@ -496,7 +496,9 @@ public class MainService extends KiboRpcService {
     }
 
     private Mat pointCuting(Mat nmat, Mat point){
-        Mat mat = new Mat(400,400,CvType.CV_8UC3);
+        Log.d(LOGTAG,"pointCuting try");
+
+        Mat mat = new Mat(400,400,CvType.CV_32F);
         float distPoint[] = new float[]{0,400, 0,0 ,400,0 ,400,400};//Lower left, upper left, upper right, lower left.
         Mat dstmat = new Mat(4,2, CvType.CV_32F);
         dstmat.put(0,0, distPoint);

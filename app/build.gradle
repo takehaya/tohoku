@@ -14,13 +14,10 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled  true
         packagingOptions {
-            pickFirst "lib/armeabi/libopencv_java3.so"
-            pickFirst "lib/mips/libopencv_java3.so"
-            pickFirst "lib/arm64-v8a/libopencv_java3.so"
-            pickFirst "lib/x86_64/libopencv_java3.so"
-            pickFirst "lib/mips64/libopencv_java3.so"
-            pickFirst "lib/armeabi-v7a/libopencv_java3.so"
-            pickFirst "lib/x86/libopencv_java3.so"
+            pickFirst "lib/arm64-v8a/libopencv_java4.so"
+            pickFirst "lib/x86_64/libopencv_java4.so"
+            pickFirst "lib/armeabi-v7a/libopencv_java4.so"
+            pickFirst "lib/x86/libopencv_java4.so"
         }
     }
     buildTypes {
@@ -64,7 +61,8 @@ dependencies {
         exclude group: 'xml-apis'
         exclude group: 'junit'
     }
-    compile 'com.quickbirdstudios:opencv:3.4.4-contrib'
+//    compile 'com.quickbirdstudios:opencv:3.4.4-contrib'
+    compile 'com.quickbirdstudios:opencv:4.1.0-contrib'
     compile 'org.jetbrains:annotations-java5:15.0'
     testCompile 'junit:junit:4.12'
     testCompile 'org.robolectric:robolectric:3.4'
