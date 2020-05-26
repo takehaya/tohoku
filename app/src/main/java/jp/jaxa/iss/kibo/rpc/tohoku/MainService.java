@@ -440,37 +440,47 @@ public class MainService extends KiboRpcService {
             Log.d(LOGTAG,"nmat == null");
             return "error";
         }
+
         ImageWrite(nmat, key);
+
+        // 1:zxing decode
         try {
             Log.d(LOGTAG,"detectQrcode 1:zxing decode");
-
-            // 1:zxing decode
             String result = zxingDetectDecodeQrcode(nmat);
             if (!result.equals("error") || 0 < result.length()){
                 return result;
             }
             Log.d(LOGTAG,"detectQrcode 2: qr rect base cutimage & decode");
+        }catch (Exception e){
+            Log.d(LOGTAG, "1:zxing decode exception detectQrcode: "+ e.getLocalizedMessage());
+        }
 
-            //2: qr rect base cutimage & decode
-            List<Mat> points = rectTrimPoint(nmat);
-            if(points != null){
-                Log.d(LOGTAG,"detectQrcode 2: points.size(): " + points.size());
-                for(int i=0; i< points.size(); i++){
-                    Mat writemat = pointCuting(nmat, points.get(i));
-                    ImageWrite(writemat, key+"-pointCuting");
-                    writemat = sharpenFilter(writemat);
-                    ImageWrite(writemat, key+"-sharpenFilter");
-
+        //2: qr rect base cutimage & decode
+        List<Mat> points = rectTrimPoint(nmat);
+        String result = "";
+        if(points != null){
+            Log.d(LOGTAG,"detectQrcode 2: points.size(): " + points.size());
+            for(int i=0; i< points.size(); i++){
+                Mat writemat = pointCuting(nmat, points.get(i));
+                ImageWrite(writemat, key+"-pointCuting");
+                writemat = sharpenFilter(writemat);
+                ImageWrite(writemat, key+"-sharpenFilter");
+                try {
                     result = zxingDetectDecodeQrcode(writemat);
                     if (!result.equals("error") || 0 < result.length()){
                         return result;
                     }
+                }catch (Exception e){
+                    Log.d(LOGTAG, "2: qr rect base cutimage & decode/exception detectQrcode: "+ e.getLocalizedMessage());
                 }
             }
+        }
 
-            Log.d(LOGTAG,"detectQrcode 3:opencv try detect & decode");
-            // 3:opencv try detect & decode
+        // 3:opencv try detect & decode
+        try {
+             Log.d(LOGTAG,"detectQrcode 3:opencv try detect & decode");
             Mat detectPoint = opencvDetectQrcode(nmat);
+            result = "";
             if (detectPoint != null){
                 Mat writemat  = pointCuting(nmat, detectPoint);
                 ImageWrite(writemat, key+"-pointCuting");
@@ -486,8 +496,9 @@ public class MainService extends KiboRpcService {
                 }
             }
         }catch (Exception e){
-            Log.d(LOGTAG, "exception detectQrcode: "+ e.getLocalizedMessage());
+            Log.d(LOGTAG, "3:opencv try detect & decode/exception detectQrcode: "+ e.getLocalizedMessage());
         }
+
         Log.d(LOGTAG,"detectQrcode not working all pattern:(");
         return "error";
     }
