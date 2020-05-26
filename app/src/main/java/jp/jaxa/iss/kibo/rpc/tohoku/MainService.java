@@ -9,7 +9,6 @@ import com.google.zxing.DecodeHintType;
 import com.google.zxing.LuminanceSource;
 import com.google.zxing.RGBLuminanceSource;
 import com.google.zxing.Reader;
-import com.google.zxing.ResultPoint;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 
@@ -22,7 +21,6 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.QRCodeDetector;
@@ -37,12 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-//import boofcv.abst.fiducial.QrCodeDetector;
-//import boofcv.alg.fiducial.qrcode.QrCode;
-//import boofcv.android.ConvertBitmap;
-//import boofcv.factory.fiducial.FactoryFiducial;
-//import boofcv.struct.image.FactoryImage;
-//import boofcv.struct.image.GrayU8;
 import gov.nasa.arc.astrobee.Result;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
@@ -105,24 +97,22 @@ public class MainService extends KiboRpcService {
 
         double distance = 0.00;
         double inc = 0.05;
+
         Vec3 road1_1_v = new Vec3(11.15, -4.8, 4.55);
         Vec3 target1_1_v = new Vec3(11.5 - distance, -5.7, 4.5);
         Vec3 target1_2_v = new Vec3(11, -6, 5.55 - distance - 0.1);
         Vec3 target1_3_v = new Vec3(11, -5.5, 4.33 + distance);
-
 
         WrapQuaternion road1_1_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
         WrapQuaternion target1_3_q = new WrapQuaternion(0, 0.707f, 0, 0.707f);
         WrapQuaternion target1_1_q = new WrapQuaternion(0, 0, 0, -1);
         WrapQuaternion target1_2_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
 
-
         Vec3 road2_1_v = new Vec3(10.5, -6.45, 5.1);
         Vec3 road2_2_v = new Vec3(11.35, -7.3, 4.9);
         Vec3 target2_1_v = new Vec3(10.30 + distance, -7.5, 4.7);
         Vec3 target2_2_v = new Vec3(11.5 - distance, -8, 5);
         Vec3 target2_3_v = new Vec3(11, -7.7, 5.55 - distance);
-
 
         WrapQuaternion road2_1_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
         WrapQuaternion road2_2_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
@@ -183,9 +173,9 @@ public class MainService extends KiboRpcService {
         }
 
 
+
         moveTo(road2_1_v, road2_1_q);
         moveTo(road2_2_v, road2_2_q);
-
 
         String p2_1  = "";
         p2_1 = scanBarcodeMoveTo(target2_1_v, target2_1_q, QRInfoType.QuaX);
@@ -242,6 +232,7 @@ public class MainService extends KiboRpcService {
         Mat ids = new Mat();
         while (arv == 0) {
             Mat source = api.getMatNavCam();
+            ImageWrite(source, "DICT_5X5_250");
             Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
             List<Mat> corners = new ArrayList<>();
             Aruco.detectMarkers(source, dictionary, corners, ids);
@@ -436,7 +427,7 @@ public class MainService extends KiboRpcService {
 
     private String detectQrcode(Mat nmat, String key) {
         Log.d(LOGTAG,"start detectQrcode");
-        if(nmat == null){
+        if(nmat == null || nmat.empty()){
             Log.d(LOGTAG,"nmat == null");
             return "error";
         }
@@ -554,7 +545,9 @@ public class MainService extends KiboRpcService {
         Mat point = new Mat();
         Boolean isDetect = detector.detect(nmat, point);
         Log.d(LOGTAG, "opencvDetectQrcode isDetect : " + isDetect);
-
+        if (!isDetect){
+            return null;
+        }
         return point;
     }
 
@@ -568,7 +561,6 @@ public class MainService extends KiboRpcService {
 
         try {
             QRCodeDetector detector = new QRCodeDetector();
-
             String result = detector.detectAndDecode(nmat);
 
             Log.d(LOGTAG,"opencvDecodeDetectQrcode"+result);
