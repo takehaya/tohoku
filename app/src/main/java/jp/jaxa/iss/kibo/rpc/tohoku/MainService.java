@@ -77,7 +77,7 @@ public class MainService extends KiboRpcService {
     ));
     public static final Boolean DOJAXA = false;
     public static final String LOGTAG = "TohokuKibo";
-    public static final String EPOCK_UNIQUE_STR = UUID.randomUUID().toString().substring(8);
+    public static final String EPOCK_UNIQUE_STR = UUID.randomUUID().toString().substring(4);
 
     private AstrobeeField AstrobeeNode = new AstrobeeField(10.95, -3.75, 4.85, 0, 0, 0.707, -0.707);
 
@@ -85,14 +85,6 @@ public class MainService extends KiboRpcService {
     protected void runPlan1() {
         runPlan2();
 //        runPlan3();
-        //
-        //        wraps.moveTo(10.6, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
-        //        wraps.moveTo(11, -4.3, 5, 0, 0, -0.7071068, 0.7071068);
-        //        wraps.moveTo(11, -5.7, 5, 0, 0, -0.7071068, 0.7071068);
-        //        wraps.moveTo(11.5, -5.7, 4.5, 0, 0, 0, 1);
-        //        wraps.moveTo(11, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
-        //
-        //        wraps.moveTo(11.1, -6, 5.55, 0, -0.7071068, 0, 0.7071068);
 
     }
 
@@ -453,7 +445,6 @@ public class MainService extends KiboRpcService {
             Log.d(LOGTAG,"detectQrcode 1:zxing decode");
 
             // 1:zxing decode
-//            String result = "";
             String result = zxingDetectDecodeQrcode(nmat);
             if (!result.equals("error") || 0 < result.length()){
                 return result;
@@ -616,7 +607,6 @@ public class MainService extends KiboRpcService {
 
         Mat mat = new Mat();
         Imgproc.warpPerspective(nmat, mat, rmat, new Size(400,400));
-        Log.d(LOGTAG,"warpPerspective done!!!");
 
         return mat;
     }
@@ -627,13 +617,10 @@ public class MainService extends KiboRpcService {
         Mat fmap = nmat.clone();
 
         Imgproc.threshold(fmap, fmap, 200, 255, Imgproc.THRESH_BINARY_INV);
-//        ImageWrite(fmap, "threshold1");
+        ImageWrite(fmap, "threshold1");
 
         Core.bitwise_not(fmap, fmap);
-//        ImageWrite(fmap, "bitwise_not");
-
-//        Imgproc.threshold(fmap, fmap, 0, 255, Imgproc.THRESH_BINARY_INV|Imgproc.THRESH_OTSU);
-//        ImageWrite(fmap, "threshold2");
+        ImageWrite(fmap, "bitwise_not");
 
         Mat hierarchy = Mat.zeros(new Size(5,5), CvType.CV_8UC1);
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
@@ -651,18 +638,16 @@ public class MainService extends KiboRpcService {
             double size = Imgproc.contourArea(ptmat);
 
             if (size < nmat.size().area() / (100 * 1)) {
-                /* サイズが小さいエリアは無視 */
+                /* Ignore areas that are small in size. */
                 continue;
             }
-//            if (size <= 1000 ){
-//                continue;
-//            }
+
             MatOfPoint2f contours2f = new MatOfPoint2f(ptmat.toArray());
             MatOfPoint2f approx2f = new MatOfPoint2f();
             double ep = Imgproc.arcLength(contours2f, true);
             Imgproc.approxPolyDP(contours2f, approx2f, ep * 0.04, true);
 
-            // 凸包の取得
+            // Obtaining a convex hull
             MatOfPoint approx = new MatOfPoint(approx2f.toArray());
             MatOfInt hull = new MatOfInt();
             Imgproc.convexHull(approx, hull);
@@ -705,27 +690,6 @@ public class MainService extends KiboRpcService {
         return destination;
     }
 
-    private static Mat preQRProcessing(Mat mat){
-        QRCodeDetector detector = new QRCodeDetector();
-
-        Mat point = new Mat();
-        Boolean isDetect = detector.detect(mat, point);
-        Log.d(LOGTAG,"preQRProcessing isDetect point: "+point.dump());
-
-        Log.i(LOGTAG, "preQRProcessing isDetect: " + isDetect);
-        if (isDetect){
-            Mat nmat = new Mat(400,400,CvType.CV_8UC3);
-            float distPoint[] = new float[]{0,400, 0,0 ,400,0 ,400,400};//Lower left, upper left, upper right, lower left.
-            Mat dstmat = new Mat(4,2, CvType.CV_32F);
-            dstmat.put(0,0, distPoint);
-
-            Mat rmat = Imgproc.getPerspectiveTransform(point, dstmat);
-            Imgproc.warpPerspective(mat, nmat, rmat, nmat.size());
-
-            return nmat;
-        }
-        return null;
-    }
 
     private Mat tryMatNavCam() {
         final int LOOP_MAX = 3;
