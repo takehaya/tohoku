@@ -75,7 +75,9 @@ public class MainService extends KiboRpcService {
             new KeepZone(10.45, -9.1, 4.6, 10.65, -8.9, 4.8, false),
             new KeepZone(10.25, -9.75, 4.2, 11.65, -3, 5.6, true)
     ));
+    public static final Boolean DOJAXA = false;
     public static final String LOGTAG = "TohokuKibo";
+    public static final String EPOCK_UNIQUE_STR = UUID.randomUUID().toString().substring(8);
 
     private AstrobeeField AstrobeeNode = new AstrobeeField(10.95, -3.75, 4.85, 0, 0, 0.707, -0.707);
 
@@ -416,24 +418,26 @@ public class MainService extends KiboRpcService {
     }
 
     private Boolean ImageWrite(Mat mat, String key){
-        if (mat == null){
-            return false;
-        }
-        Bitmap bitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(mat, bitmap);
-        String uniqueString = UUID.randomUUID().toString();
-        try {
-            File path = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-            File file = new File(path, uniqueString);
-            FileOutputStream out = new FileOutputStream(file  + "-" + key + ".png");
-            Boolean ok = bitmap.compress(Bitmap.CompressFormat.PNG, 90, out);
-            Log.d(LOGTAG, "ImageWrite: "+ file + "-" + key + ".png");
-            Log.d(LOGTAG, "ImageWrite status: "+ ok);
-            out.close();
+        if (!DOJAXA) {
+            if (mat == null) {
+                return false;
+            }
+            Bitmap bitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(mat, bitmap);
+            String uniqueString = UUID.randomUUID().toString();
+            try {
+                File path = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+                File file = new File(path, EPOCK_UNIQUE_STR + "-" + uniqueString);
+                FileOutputStream out = new FileOutputStream(file + "-" + key + ".png");
+                Boolean ok = bitmap.compress(Bitmap.CompressFormat.PNG, 90, out);
+                Log.d(LOGTAG, "ImageWrite: " + file + "-" + key + ".png");
+                Log.d(LOGTAG, "ImageWrite status: " + ok);
+                out.close();
 
-            return ok;
-        } catch (Exception e){
-            Log.d(LOGTAG, "ImageWrite fail: "+ e.getLocalizedMessage());
+                return ok;
+            } catch (Exception e) {
+                Log.d(LOGTAG, "ImageWrite fail: " + e.getLocalizedMessage());
+            }
         }
         return false;
     }
@@ -446,93 +450,57 @@ public class MainService extends KiboRpcService {
         }
         ImageWrite(nmat, key);
         try {
-            // 1:zxing decode
-            String result = "";
-//            String result = zxingDetectDecodeQrcode(nmat);
+            Log.d(LOGTAG,"detectQrcode 1:zxing decode");
 
-            // 2: qr rect base cutimage & decode
+            // 1:zxing decode
+//            String result = "";
+            String result = zxingDetectDecodeQrcode(nmat);
+            if (!result.equals("error") || 0 < result.length()){
+                return result;
+            }
+            Log.d(LOGTAG,"detectQrcode 2: qr rect base cutimage & decode");
+
+            //2: qr rect base cutimage & decode
             List<Mat> points = rectTrimPoint(nmat);
             if(points != null){
+                Log.d(LOGTAG,"detectQrcode 2: points.size(): " + points.size());
                 for(int i=0; i< points.size(); i++){
                     Mat writemat = pointCuting(nmat, points.get(i));
-//                    Mat writemat = pointCuting(nmat, points.get(i));
+                    ImageWrite(writemat, key+"-pointCuting");
                     writemat = sharpenFilter(writemat);
+                    ImageWrite(writemat, key+"-sharpenFilter");
 
                     result = zxingDetectDecodeQrcode(writemat);
-                    if (!result.equals("error")){
+                    if (!result.equals("error") || 0 < result.length()){
                         return result;
                     }
                 }
             }
+
+            Log.d(LOGTAG,"detectQrcode 3:opencv try detect & decode");
             // 3:opencv try detect & decode
             Mat detectPoint = opencvDetectQrcode(nmat);
             if (detectPoint != null){
                 Mat writemat  = pointCuting(nmat, detectPoint);
+                ImageWrite(writemat, key+"-pointCuting");
                 writemat = sharpenFilter(writemat);
-                result = zxingDetectDecodeQrcode(writemat);
-                if (!result.equals("error")){
+                ImageWrite(writemat, key+"-sharpenFilter");
+
+                if (!result.equals("error") || 0 < result.length()){
                     return result;
                 }
                 result = opencvDecodeDetectQrcode(writemat);
-                if (!result.equals("error")){
+                if (!result.equals("error") || 0 < result.length()){
                     return result;
                 }
             }
         }catch (Exception e){
             Log.d(LOGTAG, "exception detectQrcode: "+ e.getLocalizedMessage());
         }
-
+        Log.d(LOGTAG,"detectQrcode not working all pattern:(");
         return "error";
     }
 
-//    private String detectQrcode(Mat nmat, String key) {
-//        Log.d(LOGTAG,"start detectQrcode");
-//        if(nmat == null){
-//            Log.d(LOGTAG,"nmat == null");
-//            return "error";
-//        }
-//        final int loopsize = 2;
-//        for(int i = 0; i< loopsize; i++){
-//            ImageWrite(nmat, key);
-//            try {
-//
-//                List<MatOfPoint> points = rectTrimPoint(nmat);
-//                if(points != null){
-//                    for
-//                    nmat = pointCuting(nmat, point);
-//                    nmat = sharpenFilter(nmat);
-//                    continue;
-//                }
-//                String result = zxingDetectDecodeQrcode(nmat);
-//                if (result.equals("error")){
-//                    Mat detectPoint = opencvDetectQrcode(nmat);
-//                    if (detectPoint != null){
-//                        nmat = pointCuting(nmat, detectPoint);
-//                        nmat = sharpenFilter(nmat);
-//                        result = opencvDecodeQrcode(nmat, detectPoint);
-//                        if (result.equals("error")){
-//                            continue;
-//                        }
-//                    }
-//                }
-////                }else{
-////                    Mat point = rectTrimPoint(nmat);
-////
-////                    if(point != null){
-////                        nmat = pointCuting(nmat, point);
-////                        nmat = sharpenFilter(nmat);
-////                        continue;
-////                    }
-////                }
-//                return result;
-//            }catch (Exception e){
-//                Log.d(LOGTAG, "exception detectQrcode: "+ e.getLocalizedMessage());
-//                Log.d(LOGTAG, e.getStackTrace().toString());
-//            }
-//        }
-//
-//        return "error";
-//    }
 
     private String zxingDetectDecodeQrcode(Mat nmat){
         if(nmat == null){
@@ -571,17 +539,6 @@ public class MainService extends KiboRpcService {
         }
         return "error";
     }
-//    private Mat zxingDetectPointtoMat(ResultPoint[] pointArray){
-//        Mat pmat = new Mat(4, 2, CvType.CV_32F);
-//        float distPoint[] = new float[]{
-//                pointArray[0].getX(),pointArray[0].getY(),
-//                pointArray[0].getX(),pointArray[0].getY(),
-//                400,0,
-//                400,400,
-//        };//Lower left, upper left, upper right, lower left.
-//        pmat.put(0,0, distPoint);
-//
-//    }
 
     private Mat opencvDetectQrcode(Mat nmat) {
         if(nmat == null){
@@ -669,14 +626,14 @@ public class MainService extends KiboRpcService {
 
         Mat fmap = nmat.clone();
 
-        Imgproc.threshold(fmap, fmap, 200, 255, Imgproc.THRESH_TOZERO_INV);
-        ImageWrite(fmap, "threshold1");
+        Imgproc.threshold(fmap, fmap, 200, 255, Imgproc.THRESH_BINARY_INV);
+//        ImageWrite(fmap, "threshold1");
 
         Core.bitwise_not(fmap, fmap);
-        ImageWrite(fmap, "bitwise_not");
+//        ImageWrite(fmap, "bitwise_not");
 
-        Imgproc.threshold(fmap, fmap, 0, 255, Imgproc.THRESH_BINARY_INV|Imgproc.THRESH_OTSU);
-        ImageWrite(fmap, "threshold2");
+//        Imgproc.threshold(fmap, fmap, 0, 255, Imgproc.THRESH_BINARY_INV|Imgproc.THRESH_OTSU);
+//        ImageWrite(fmap, "threshold2");
 
         Mat hierarchy = Mat.zeros(new Size(5,5), CvType.CV_8UC1);
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
@@ -692,19 +649,18 @@ public class MainService extends KiboRpcService {
         for(int i = 0; i<contours.size(); i++){
             MatOfPoint ptmat = contours.get(i);
             double size = Imgproc.contourArea(ptmat);
-            Log.d(LOGTAG,"rectTrimPoint size" + size);
 
-//            if (size < nmat.size().area() / (100 * 1)) {
-//                /* サイズが小さいエリアは無視 */
-//                continue;
-//            }
-            if (size <= 1000 ){
+            if (size < nmat.size().area() / (100 * 1)) {
+                /* サイズが小さいエリアは無視 */
                 continue;
             }
+//            if (size <= 1000 ){
+//                continue;
+//            }
             MatOfPoint2f contours2f = new MatOfPoint2f(ptmat.toArray());
             MatOfPoint2f approx2f = new MatOfPoint2f();
             double ep = Imgproc.arcLength(contours2f, true);
-            Imgproc.approxPolyDP(contours2f, approx2f, ep * 0.05, true);
+            Imgproc.approxPolyDP(contours2f, approx2f, ep * 0.04, true);
 
             // 凸包の取得
             MatOfPoint approx = new MatOfPoint(approx2f.toArray());
@@ -726,13 +682,6 @@ public class MainService extends KiboRpcService {
 
                 md = approx.get((int)hull.get(0,0)[0], 0);
                 srcPointMat.put(0, 0, new float[]{(float)md[0], (float)md[1]});
-
-//                for (int k = 0; k < hull.size().height; k++) {
-//                    int hullIndex = (int)hull.get(k, 0)[0];
-//                    double[] m = approx.get(hullIndex, 0);
-//                    srcPointMat.put(k, 0, m);
-//                }
-
                 retcontour.add(srcPointMat);
             }
         }
