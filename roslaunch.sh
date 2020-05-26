@@ -13,7 +13,7 @@
     popd
     export ROS_IP=$(getent hosts llp | awk '{ print $1 }')
     export ROS_MASTER_URI=http://${ROS_IP}:11311
-    $ANDROID_PATH/scripts/gs_manager.sh start
+    $ANDROID_PATH/scripts/gs_manager.sh restart
     cd $SOURCE_PATH/tools/gds_helper/src
     python gds_simulator.py
 }&
