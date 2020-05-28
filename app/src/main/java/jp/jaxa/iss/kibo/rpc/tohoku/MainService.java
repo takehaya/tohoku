@@ -83,7 +83,7 @@ public class MainService extends KiboRpcService {
 
     private final float[] Laservec = new float[]{0.0572f, 0.1302f, -0.1111f};
 
-    private final float[] NavLaserGap = new float[]{0.0994f, -0.0132f, -0.0285f};//nav->laser
+    private final float[] NavLaserGap = new float[]{0.0994f, 0.0132f, 0.0285f};//abs(nav->laser)
 
     private void cameraMatInit(){
         cameraMatrix = new Mat(3,3,CvType.CV_32FC1);
@@ -261,10 +261,16 @@ public class MainService extends KiboRpcService {
             qz3 = Double.parseDouble(p2_3_con[1]);
         }
 
-        moveTo(px3,py3,pz3,qx3,qy3,qz3,Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3)));
+        double pw3 = Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3));
+        Result.Status q3status = moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
+
+        if (q3status != Result.Status.OK){
+            moveTo(11, py3, 4.7, qx3,qy3,qz3,pw3);
+            moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
+        }
 
         WrapQuaternion yminqua = new WrapQuaternion(0, 0, 0.707f, -0.707f);
-        relativeMoveTo(new Vec3(0,0,0),yminqua);
+        relativeMoveTo(new Vec3(0,0,0.1),yminqua);
 
         Mat ids = new Mat();
 
@@ -311,6 +317,10 @@ public class MainService extends KiboRpcService {
                     Log.d(LOGTAG,"Try Read AR! ar_roll_angle: "+ar_roll_angle);
                     Log.d(LOGTAG,"Try Read AR! ar_pitch_angle: "+ar_pitch_angle);
                     Log.d(LOGTAG,"Try Read AR! ar_yaw_angle: "+ar_yaw_angle);
+                }else{
+                    relativeMoveTo(new Vec3(0,0,0.1),yminqua);
+                    Log.d(LOGTAG,"Try Read AR! notfound ar");
+
                 }
             } catch (Exception e) {
                 Log.d(LOGTAG, "exception readAR"+ e.getLocalizedMessage());
@@ -321,7 +331,7 @@ public class MainService extends KiboRpcService {
         if (arv != 0){
             api.judgeSendDiscoveredAR(Integer.toString(arv));
             double xzsize = arucoToTargetDist/Math.sqrt(2);
-            Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)+NavLaserGap[0],0+NavLaserGap[1],0+(xzsize+ar_z)+NavLaserGap[2]);
+            Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)-NavLaserGap[0],0,0+(xzsize+ar_z)-NavLaserGap[2]);
             relativeMoveTo(calmovetopoint,yminqua);
 
             Log.d(LOGTAG,"DO LASERCTL!");
