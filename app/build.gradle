@@ -67,5 +67,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.robolectric:robolectric:3.4'
     compile 'com.google.guava:guava:20.0'
-    compile 'com.google.zxing:core:3.3.0'
+
+    // Is statement soruce code import. not comment out
+//    compile 'com.google.zxing:core:3.3.0'
 }

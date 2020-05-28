@@ -1,16 +1,18 @@
 package jp.jaxa.iss.kibo.rpc.tohoku;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.LuminanceSource;
-import com.google.zxing.RGBLuminanceSource;
-import com.google.zxing.Reader;
-import com.google.zxing.common.HybridBinarizer;
-import com.google.zxing.qrcode.QRCodeReader;
+import com.google.astrozxing.BinaryBitmap;
+import com.google.astrozxing.DecodeHintType;
+import com.google.astrozxing.LuminanceSource;
+import com.google.astrozxing.RGBLuminanceSource;
+import com.google.astrozxing.Reader;
+import com.google.astrozxing.common.HybridBinarizer;
+import com.google.astrozxing.qrcode.QRCodeReader;
 
 import org.opencv.android.Utils;
 import org.opencv.aruco.Aruco;
@@ -67,7 +69,7 @@ public class MainService extends KiboRpcService {
             new KeepZone(10.45, -9.1, 4.6, 10.65, -8.9, 4.8, false),
             new KeepZone(10.25, -9.75, 4.2, 11.65, -3, 5.6, true)
     ));
-    public static final Boolean DOJAXA = false;
+    public static final Boolean DOJAXA = true;
     public static final String LOGTAG = "TohokuKibo";
     public static final String EPOCK_UNIQUE_STR = UUID.randomUUID().toString().substring(4);
 
@@ -95,9 +97,8 @@ public class MainService extends KiboRpcService {
         int arv = 0;
         final int LOOPSIZE = 4;
 
-        double distance = 0.00;
-        double inc = 0.05;
-
+        double distance = 0.12;
+        double inc = 0.00;
         Vec3 road1_1_v = new Vec3(11.15, -4.8, 4.55);
         Vec3 target1_1_v = new Vec3(11.5 - distance, -5.7, 4.5);
         Vec3 target1_2_v = new Vec3(11, -6, 5.55 - distance - 0.1);
@@ -124,11 +125,11 @@ public class MainService extends KiboRpcService {
 
         int loopCounter = 0;
         String p1_3 = "";
-        p1_3 = scanBarcodeMoveTo(target1_3_v, target1_3_q, QRInfoType.PosZ);
+        p1_3 = scanKinematicBarcode(target1_3_v, target1_3_q, QRInfoType.PosZ);
         if (p1_3.equals("error")) {
             do {
                 moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q);
-                p1_3 = scanBarcode(QRInfoType.PosZ);
+                p1_3 = scanOnecBarcode(QRInfoType.PosZ);
                 loopCounter++;
             } while (p1_3.equals("error") && loopCounter < LOOPSIZE);
             loopCounter = 0;
@@ -140,11 +141,11 @@ public class MainService extends KiboRpcService {
         }
 
         String p1_1 = "";
-        p1_1 = scanBarcodeMoveTo(target1_1_v, target1_1_q, QRInfoType.PosX);
+        p1_1 = scanKinematicBarcode(target1_1_v, target1_1_q, QRInfoType.PosX);
         if (p1_1.equals("error")) {
             do {
                 moveTo(target1_1_v.add(new Vec3(inc, 0, 0)), target1_1_q);
-                p1_1 = scanBarcode(QRInfoType.PosX);
+                p1_1 = scanOnecBarcode(QRInfoType.PosX);
                 loopCounter++;
             } while (p1_1.equals("error") && loopCounter < LOOPSIZE);
             loopCounter = 0;
@@ -156,11 +157,11 @@ public class MainService extends KiboRpcService {
         }
 
         String p1_2  = "";
-        p1_2 = scanBarcodeMoveTo(target1_2_v, target1_2_q, QRInfoType.PosY);
+        p1_2 = scanKinematicBarcode(target1_2_v, target1_2_q, QRInfoType.PosY);
         if (p1_2.equals("error")) {
             do {
                 moveTo(target1_2_v.add(new Vec3(0, 0, inc)), target1_2_q);
-                p1_2 = scanBarcode(QRInfoType.PosY);
+                p1_2 = scanOnecBarcode(QRInfoType.PosY);
 
                 loopCounter++;
             } while (p1_2.equals("error") && loopCounter < LOOPSIZE);
@@ -172,17 +173,15 @@ public class MainService extends KiboRpcService {
             py3 = Double.parseDouble(p1_2_con[1]);
         }
 
-
-
         moveTo(road2_1_v, road2_1_q);
         moveTo(road2_2_v, road2_2_q);
 
         String p2_1  = "";
-        p2_1 = scanBarcodeMoveTo(target2_1_v, target2_1_q, QRInfoType.QuaX);
+        p2_1 = scanKinematicBarcode(target2_1_v, target2_1_q, QRInfoType.QuaX);
         if (p2_1.equals("error")) {
             do {
                 moveTo(target2_1_v.add(new Vec3(-inc, 0,0)), target2_1_q);
-                p2_1 = scanBarcode(QRInfoType.QuaX);
+                p2_1 = scanOnecBarcode(QRInfoType.QuaX);
 
                 loopCounter++;
             } while (p2_1.equals("error") && loopCounter < LOOPSIZE);
@@ -195,11 +194,11 @@ public class MainService extends KiboRpcService {
         }
 
         String p2_2  = "";
-        p2_2 = scanBarcodeMoveTo(target2_2_v, target2_2_q, QRInfoType.QuaY);
+        p2_2 = scanKinematicBarcode(target2_2_v, target2_2_q, QRInfoType.QuaY);
         if (p2_2.equals("error")) {
             do {
                 moveTo(target2_2_v.add(new Vec3(inc, 0,0)), target2_2_q);
-                p2_2 = scanBarcode(QRInfoType.QuaY);
+                p2_2 = scanOnecBarcode(QRInfoType.QuaY);
 
                 loopCounter++;
             } while (p2_2.equals("error") && loopCounter < LOOPSIZE);
@@ -212,11 +211,11 @@ public class MainService extends KiboRpcService {
         }
 
         String p2_3  = "";
-        p2_3 = scanBarcodeMoveTo(target2_3_v, target2_3_q, QRInfoType.QuaZ);
+        p2_3 = scanKinematicBarcode(target2_3_v, target2_3_q, QRInfoType.QuaZ);
         if (p2_2.equals("error")) {
             do {
                 moveTo(target2_3_v.add(new Vec3(0, 0, inc)), target2_3_q);
-                p2_3 = scanBarcode(QRInfoType.QuaZ);
+                p2_3 = scanOnecBarcode(QRInfoType.QuaZ);
 
                 loopCounter++;
             } while (p2_3.equals("error") && loopCounter < LOOPSIZE);
@@ -284,10 +283,36 @@ public class MainService extends KiboRpcService {
         api.judgeSendFinishSimulation();
     }
 
+    //-------------ctl functions--------------------
+    private void keepInZone(){
+        double[] kiz_x = {10.25,11.65};
+        double[] kiz_y = {-9.75,-3};
+        double[] kiz_z= {4.2,5.6};
+        double x = api.getTrustedRobotKinematics().getPosition().getX();
+        double y = api.getTrustedRobotKinematics().getPosition().getY();
+        double z = api.getTrustedRobotKinematics().getPosition().getZ();
+        Log.d(LOGTAG,"Keep Zone");
+        if (x < kiz_x[0]){
+            relativeMoveTo(kiz_x[0] - x + 0.1,0,0,0,0,0,0);
+        }
+        else if (x > kiz_x[1]){
+            relativeMoveTo(x - kiz_x[0] - 0.1,0,0,0,0,0,0);
+        }
+        if (y < kiz_y[0]){
+            relativeMoveTo(0,kiz_y[0] - y + 0.1,0,0,0,0,0);
+        }
+        else if (y > kiz_y[1]){
+            relativeMoveTo(0,y - kiz_y[0] - 0.1,0,0,0,0,0);
+        }
+        if (z < kiz_z[0]){
+            relativeMoveTo(0,0,kiz_z[0] - z + 0.1,0,0,0,0);
+        }
+        else if (z > kiz_z[1]){
+            relativeMoveTo(0,0,z - kiz_z[0] - 0.1,0,0,0,0);
+        }
+    }
 
-    //-------------QR Decoding--------------------
-
-    private String scanBarcode(QRInfoType type){
+    private String scanOnecBarcode(QRInfoType type){
         Log.d(LOGTAG,"start scanBarcode");
         Mat snapshot = api.getMatNavCam();
         String value = detectQrcode(snapshot, type.name());
@@ -323,7 +348,56 @@ public class MainService extends KiboRpcService {
         return value;
     }
 
+    private String scanKinematicBarcode(Vec3 vec, WrapQuaternion qua, QRInfoType type){
+        return scanKinematicBarcode(vec.getX(), vec.getY(), vec.getZ(),
+                (double)qua.getX(), (double)qua.getY(), (double)qua.getZ(), (double)qua.getW(),
+                type
+        );
+    }
 
+    private String scanKinematicBarcode(double pos_x, double pos_y, double pos_z,
+                                double qua_x, double qua_y, double qua_z,
+                                double qua_w,QRInfoType type){
+        Vec3 updatePoint = new Vec3(0,0,0);
+        WrapQuaternion updateQuaternion = new WrapQuaternion();
+        int loopMax = 3;
+        int loop = 0;
+        Mat snapshot = tryMatNavCam();
+        String value = detectQrcode(snapshot, type.name());
+        printAllPosition("position Scan");
+        while (value == null && loop < loopMax) {
+            moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
+            snapshot = tryMatNavCam();
+            value = detectQrcode(snapshot, type.name());
+            if (value == null) {
+                double qx = api.getTrustedRobotKinematics().getOrientation().getX();
+                double qy = api.getTrustedRobotKinematics().getOrientation().getY();
+                double qz = api.getTrustedRobotKinematics().getOrientation().getZ();
+                double qw = api.getTrustedRobotKinematics().getOrientation().getW();
+                printAllPosition("---before sep---");
+                updateQuaternion = relativeStableQuaternion(
+                        new WrapQuaternion((float) qua_x, (float) qua_y, (float) qua_z, (float) qua_w),
+                        new WrapQuaternion((float) qx, (float) qy, (float) qz, (float) qw)
+                );
+
+                Log.d(LOGTAG, "relative Quatation");
+                relativeMoveTo(updatePoint, updateQuaternion);
+                snapshot = tryMatNavCam();
+                value = detectQrcode(snapshot, type.name());
+
+                printPosition("relative last", updatePoint, updateQuaternion);
+            }
+            loop++;
+        }
+        if (value != "error") {
+            api.judgeSendDiscoveredQR(type.getInt() , value);
+            System.out.println("valuesQR" + value);
+        }
+        else{
+            System.out.println("valuesQR = null");
+        }
+        return value;
+    }
     private String scanBarcodeMoveTo(Vec3 vec, WrapQuaternion qua, QRInfoType type){
         return scanBarcodeMoveTo(vec.getX(), vec.getY(), vec.getZ(),
                 (double)qua.getX(), (double)qua.getY(), (double)qua.getZ(), (double)qua.getW(),
@@ -400,6 +474,8 @@ public class MainService extends KiboRpcService {
         return value;
     }
 
+    //-------------QR Decoding--------------------
+
     private Boolean ImageWrite(Mat mat, String key){
         if (!DOJAXA) {
             if (mat == null) {
@@ -438,10 +514,10 @@ public class MainService extends KiboRpcService {
         try {
             Log.d(LOGTAG,"detectQrcode 1:zxing decode");
             String result = zxingDetectDecodeQrcode(nmat);
-            if (!result.equals("error") || 0 < result.length()){
+            if (!result.equals("error") && 0 < result.length()){
                 return result;
             }
-            Log.d(LOGTAG,"detectQrcode 2: qr rect base cutimage & decode");
+            Log.d(LOGTAG,"detectQrcode 1: qr rect base cutimage & decode");
         }catch (Exception e){
             Log.d(LOGTAG, "1:zxing decode exception detectQrcode: "+ e.getLocalizedMessage());
         }
@@ -458,7 +534,7 @@ public class MainService extends KiboRpcService {
                 ImageWrite(writemat, key+"-sharpenFilter");
                 try {
                     result = zxingDetectDecodeQrcode(writemat);
-                    if (!result.equals("error") || 0 < result.length()){
+                    if (!result.equals("error") && 0 < result.length()){
                         return result;
                     }
                 }catch (Exception e){
@@ -467,39 +543,39 @@ public class MainService extends KiboRpcService {
             }
         }
 
-        // 3:opencv try detect & decode
-        try {
-             Log.d(LOGTAG,"detectQrcode 3:opencv try detect & decode");
-            Mat detectPoint = opencvDetectQrcode(nmat);
-            result = "";
-            if (detectPoint != null){
-                Mat writemat  = pointCuting(nmat, detectPoint);
-                ImageWrite(writemat, key+"-pointCuting");
-                writemat = sharpenFilter(writemat);
-                ImageWrite(writemat, key+"-sharpenFilter");
-
-                if (!result.equals("error") || 0 < result.length()){
-                    return result;
-                }
-                result = opencvDecodeDetectQrcode(writemat);
-                if (!result.equals("error") || 0 < result.length()){
-                    return result;
-                }
-            }
-        }catch (Exception e){
-            Log.d(LOGTAG, "3:opencv try detect & decode/exception detectQrcode: "+ e.getLocalizedMessage());
-        }
+//        // 3:opencv try detect & decode
+//        try {
+//             Log.d(LOGTAG,"detectQrcode 3:opencv try detect & decode");
+//            Mat detectPoint = opencvDetectQrcode(nmat);
+//            result = "";
+//            if (detectPoint != null){
+//                Mat writemat  = pointCuting(nmat, detectPoint);
+//                ImageWrite(writemat, key+"-pointCuting");
+//                writemat = sharpenFilter(writemat);
+//                ImageWrite(writemat, key+"-sharpenFilter");
+//
+//                if (!result.equals("error") && 0 < result.length()){
+//                    return result;
+//                }
+//                result = opencvDecodeDetectQrcode(writemat);
+//                if (!result.equals("error") && 0 < result.length()){
+//                    return result;
+//                }
+//            }
+//        }catch (Exception e){
+//            Log.d(LOGTAG, "3:opencv try detect & decode/exception detectQrcode: "+ e.getLocalizedMessage());
+//        }
 
         Log.d(LOGTAG,"detectQrcode not working all pattern:(");
         return "error";
     }
-
 
     private String zxingDetectDecodeQrcode(Mat nmat){
         if(nmat == null){
             Log.d(LOGTAG,"nmat == null");
             return "error";
         }
+
         Bitmap bitmap = Bitmap.createBitmap(nmat.width(), nmat.height(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(nmat, bitmap);
         int width = bitmap.getWidth();
@@ -513,13 +589,18 @@ public class MainService extends KiboRpcService {
             // zxing で扱える BinaryBitmap形式に変換する
             LuminanceSource source = new RGBLuminanceSource(width, height, pixels);
             BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+            Log.d(LOGTAG, "zxingDetectQRcode conv bitmap");
+
             // zxing で画像データを読み込み解析する
             Reader reader = new QRCodeReader();
+
+            // do optimize. not speedy
             Map<DecodeHintType, Object> hintMap = new HashMap<DecodeHintType, Object>();
             hintMap.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
+            com.google.astrozxing.Result decodeResult = reader.decode(binaryBitmap, hintMap);
 
-            com.google.zxing.Result decodeResult = reader.decode(binaryBitmap, hintMap);
-//            ResultPoint[] resultPoints = decodeResult.getResultPoints();
+//            com.google.astrozxing.Result decodeResult = reader.decode(binaryBitmap);
+
             // 解析結果を取得する
             String result = decodeResult.getText();
             if(!(0 < result.length()) || result == null) {
@@ -693,26 +774,44 @@ public class MainService extends KiboRpcService {
         return destination;
     }
 
+    private Mat normalBinaryFilter(Mat nmat){
+        Log.d(LOGTAG,"normalBinaryImage try!");
 
-    private Mat tryMatNavCam() {
-        final int LOOP_MAX = 3;
+        Imgproc.threshold(nmat, nmat, 200, 255, Imgproc.THRESH_BINARY_INV);
+        ImageWrite(nmat, "normalBinaryImage threshold1");
 
-        Mat result = this.api.getMatNavCam();
-        int loopCounter = 0;
-        Log.i(MainService.LOGTAG, "tryMatNavCam Result: " + (result!=null));
+        Core.bitwise_not(nmat, nmat);
+        ImageWrite(nmat, "normalBinaryImage bitwise_not");
 
-        while (result == null && loopCounter < LOOP_MAX) {
-            result = this.api.getMatNavCam();
-            Log.i(MainService.LOGTAG, "tryMatNavCam Result: " + (result!=null));
-            ++loopCounter;
-        }
-        return result;
+        return nmat;
     }
+
 
     //-----------------AR processing----------------------
 
 
-    //-----------------basic functions----------------------
+    //-----------------basic action functions----------------------
+
+    private WrapQuaternion relativeStableQuaternion(WrapQuaternion targetQua, WrapQuaternion currentQua){
+        printPosition(
+                "relative stable target",
+                0,0,0,(double) targetQua.getX()
+                ,(double) targetQua.getY(),(double) targetQua.getZ(),(double) targetQua.getW());
+        printPosition(
+                "relative stable current",
+                0,0,0,(double) currentQua.getX()
+                ,(double) currentQua.getY(),(double) currentQua.getZ(),(double) currentQua.getW());
+
+        WrapQuaternion inverse = WrapQuaternion.Inverse(currentQua);
+        WrapQuaternion mul = WrapQuaternion.mul(inverse,targetQua);
+
+        printPosition(
+                "relative stable result",
+                0,0,0,
+                (double) mul.getX(),(double) mul.getY(),(double) mul.getZ(),(double) mul.getW());
+
+        return mul;
+    }
 
     public Result.Status moveTo(Vec3 vec, WrapQuaternion quat) {
         return moveToRun(
@@ -730,29 +829,19 @@ public class MainService extends KiboRpcService {
     private Result.Status moveToRun(double pos_x, double pos_y, double pos_z,
                            float qua_x, float qua_y, float qua_z, float qua_w) {
 
-        final int LOOP_MAX = 3;
+        final int LOOP_MAX = 4;
         final Point point = new Point(pos_x, pos_y, pos_z);
         final Quaternion quaternion = new Quaternion(qua_x, qua_y, qua_z, qua_w);
-
-        String mes = "{" + "moveTo" + ","
-                + BigDecimal.valueOf(pos_x).toPlainString() + ","
-                + BigDecimal.valueOf(pos_y).toPlainString() + ","
-                + BigDecimal.valueOf(pos_z).toPlainString() + ","
-                + BigDecimal.valueOf(qua_x).toPlainString() + ","
-                + BigDecimal.valueOf(qua_y).toPlainString() + ","
-                + BigDecimal.valueOf(qua_z).toPlainString() + ","
-                + BigDecimal.valueOf(qua_w).toPlainString() + ","
-                + "}";
 
         Result result = this.api.moveTo(point, quaternion, true);
         int loopCounter = 0;
         Log.i(MainService.LOGTAG, "MoveTo Result: " + result.getStatus().toString());
-        Log.i(MainService.LOGTAG, "MoveTo Do Params: " + mes);
+        printPosition("moveToRun", point, quaternion);
 
         while (!result.hasSucceeded() && loopCounter < LOOP_MAX) {
             result = this.api.moveTo(point, quaternion, true);
             Log.i(MainService.LOGTAG, "MoveTo Result: " + result.getStatus().toString());
-            Log.i(MainService.LOGTAG, "MoveTo Do Params: " + mes);
+            printPosition("moveToRun", point, quaternion);
             ++loopCounter;
         }
         return result.getStatus();
@@ -775,26 +864,17 @@ public class MainService extends KiboRpcService {
                                    float qua_x, float qua_y, float qua_z, float qua_w){
         final Point point = new Point(pos_x, pos_y, pos_z);
         final Quaternion quaternion = new Quaternion(qua_x, qua_y, qua_z, qua_w);
-        String mes = "{" + "relativeMoveToRun" + ","
-                + BigDecimal.valueOf(pos_x).toPlainString() + ","
-                + BigDecimal.valueOf(pos_y).toPlainString() + ","
-                + BigDecimal.valueOf(pos_z).toPlainString() + ","
-                + BigDecimal.valueOf(qua_x).toPlainString() + ","
-                + BigDecimal.valueOf(qua_y).toPlainString() + ","
-                + BigDecimal.valueOf(qua_z).toPlainString() + ","
-                + BigDecimal.valueOf(qua_w).toPlainString() + ","
-                + "}";
 
-        final int LOOP_MAX = 3;
+        final int LOOP_MAX = 4;
         int loopCounter = 0;
         Result result = api.relativeMoveTo(point, quaternion, true);
         Log.i(MainService.LOGTAG, "relativeMoveTo Result: " + result.getStatus().toString());
-        Log.i(MainService.LOGTAG, "relativeMoveTo Do Params: " + mes);
-
+        printPosition("relativeMoveTo", point, quaternion);
         while (!result.hasSucceeded() && loopCounter < LOOP_MAX) {
             result = this.api.relativeMoveTo(point, quaternion, true);
             Log.i(MainService.LOGTAG, "relativeMoveTo Result: " + result.getStatus().toString());
-            Log.i(MainService.LOGTAG, "relativeMoveTo Do Params: " + mes);
+            printPosition("relativeMoveTo", point, quaternion);
+
             ++loopCounter;
         }
         return result.getStatus();
@@ -819,6 +899,49 @@ public class MainService extends KiboRpcService {
 
     public void moveTo(Point pos, Quaternion qua) {
         this.moveTo2(pos.getX(), pos.getY(), pos.getZ(), qua.getX(), qua.getY(), qua.getZ(), qua.getW());
+    }
+
+    private Mat tryMatNavCam() {
+        final int LOOP_MAX = 3;
+
+        Mat result = this.api.getMatNavCam();
+        int loopCounter = 0;
+        Log.i(MainService.LOGTAG, "tryMatNavCam Result: " + (result!=null));
+
+        while (result == null && loopCounter < LOOP_MAX) {
+            result = this.api.getMatNavCam();
+            Log.i(MainService.LOGTAG, "tryMatNavCam Result: " + (result!=null));
+            ++loopCounter;
+        }
+        return result;
+    }
+
+    //-----------------basic utils functions----------------------
+
+    public void printPosition(String label, Point pos, Quaternion qua){
+        printPosition(label, pos.getX(), pos.getY(), pos.getZ(), qua.getX(), qua.getY(), qua.getZ(), qua.getW());
+    }
+
+    private void printPosition(String label,double x,double y,double z,
+                               double qx,double qy, double qz, double qw){
+        Log.d(LOGTAG,label + " : Position = " + x + " "
+                + y + " " + z + " " + "; Quan " + qx + " " + qy + " " + qz + " " + qw);
+    }
+
+    private void printAllPosition(String lable){
+        Log.d(LOGTAG,lable);
+        double x =  api.getTrustedRobotKinematics().getPosition().getX();
+        double y =  api.getTrustedRobotKinematics().getPosition().getY();
+        double z =  api.getTrustedRobotKinematics().getPosition().getZ();
+        double qx = api.getTrustedRobotKinematics().getOrientation().getX();
+        double qy = api.getTrustedRobotKinematics().getOrientation().getY();
+        double qz = api.getTrustedRobotKinematics().getOrientation().getZ();
+        double qw = api.getTrustedRobotKinematics().getOrientation().getW();
+        Log.d(LOGTAG,"IMU linear: " + api.getImu().getLinearAcceleration().toString());
+        Log.d(LOGTAG,"IMU Angular: " + api.getImu().getAngularVelocity().toString());
+        Log.d(LOGTAG,"IMU Orientation: " + api.getImu().getOrientation().toString());
+        printPosition("moving",x,y,z, qx,qy,qz,qw);
+        Log.d(LOGTAG,"<" + lable + ">");
     }
 }
 

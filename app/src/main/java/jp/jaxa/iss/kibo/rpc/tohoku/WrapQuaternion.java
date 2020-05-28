@@ -29,7 +29,7 @@ public class WrapQuaternion extends Quaternion {
     public void setW(float w) { this.m_vec[3] = w; }
 
     // The identity rotation (RO). This quaternion corresponds to "no rotation": the object
-    public static Quaternion getIdentity(){
+    public static WrapQuaternion getIdentity(){
             return identityQuaternion;
     }
 
@@ -47,17 +47,32 @@ public class WrapQuaternion extends Quaternion {
     }
 
     // Combines rotations /lhs/ and /rhs/.
-    public static Quaternion mul(Quaternion lhs, Quaternion rhs)
+    public static WrapQuaternion mul(Quaternion lhs, Quaternion rhs)
     {
-        return new Quaternion(
+        return new WrapQuaternion(
                 lhs.getW() * rhs.getX() + lhs.getX() * rhs.getW() + lhs.getY() * rhs.getZ() - lhs.getZ() * rhs.getY(),
                 lhs.getW() * rhs.getY() + lhs.getY() * rhs.getW() + lhs.getZ() * rhs.getX() - lhs.getX() * rhs.getZ(),
                 lhs.getW() * rhs.getZ() + lhs.getZ() * rhs.getW() + lhs.getX() * rhs.getY() - lhs.getY() * rhs.getX(),
                 lhs.getW() * rhs.getW() - lhs.getX() * rhs.getX() - lhs.getY() * rhs.getY() - lhs.getZ() * rhs.getZ()
         );
     }
+
+    public static WrapQuaternion Inverse(WrapQuaternion quaternion)
+    {
+        double num2 = (((quaternion.getX() * quaternion.getX()) + (quaternion.getY() * quaternion.getY())) + (quaternion.getZ() * quaternion.getZ())) + (quaternion.getW() * quaternion.getW());
+        double num = 1.0 / num2;
+
+        WrapQuaternion quaternion2 = new WrapQuaternion(
+                (float) (-1 * quaternion.getX() * num),
+                (float) (-1 * quaternion.getY() * num),
+                (float) (-1 * quaternion.getZ() * num),
+                (float) (-1 * quaternion.getW() * num)
+        );
+        return quaternion2;
+    }
+
     // The dot product between two rotations.
-    public static float dot(Quaternion a, Quaternion b)
+    public static float dot(WrapQuaternion a, WrapQuaternion b)
     {
         return a.getX() * b.getX() + a.getY() * b.getY() + a.getZ() * b.getZ() + a.getW() * b.getW();
     }
