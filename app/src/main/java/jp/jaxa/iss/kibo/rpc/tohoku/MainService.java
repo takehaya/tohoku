@@ -1,9 +1,7 @@
 package jp.jaxa.iss.kibo.rpc.tohoku;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Environment;
-import android.provider.Settings;
 import android.util.Log;
 
 import com.google.astrozxing.BinaryBitmap;
@@ -69,11 +67,45 @@ public class MainService extends KiboRpcService {
             new KeepZone(10.45, -9.1, 4.6, 10.65, -8.9, 4.8, false),
             new KeepZone(10.25, -9.75, 4.2, 11.65, -3, 5.6, true)
     ));
+
     public static final Boolean DOJAXA = true;
     public static final String LOGTAG = "TohokuKibo";
     public static final String EPOCK_UNIQUE_STR = UUID.randomUUID().toString().substring(4);
 
     private AstrobeeField AstrobeeNode = new AstrobeeField(10.95, -3.75, 4.85, 0, 0, 0.707, -0.707);
+
+    private Mat cameraMatrix;
+    private Mat distorsionMatrix;
+    private final float arucoMarkerLength = 0.05f;//Length of one side
+    private final float arucoToTargetDist = 0.2f;//Length of one side
+
+    private final float[] NavCamvec = new float[]{-0.0422f, 0.117f, -0.0826f};//xyz
+
+    private final float[] Laservec = new float[]{0.0572f, 0.1302f, -0.1111f};
+
+    private final float[] NavLaserGap = new float[]{0.0994f, -0.0132f, -0.0285f};//nav->laser
+
+    private void cameraMatInit(){
+        cameraMatrix = new Mat(3,3,CvType.CV_32FC1);
+        distorsionMatrix = new Mat();
+        // cameraMatrix will be of the form
+        // | Fx 0  Cx |
+        // | 0  Fy Cy |
+        // | 0  0   1 |
+        double[] cameraArray =  {
+                344.173397, 0.000000, 630.793795,
+                0.000000, 344.277922, 487.033834,
+                0.000000, 0.00000000, 1.00000000,
+        };
+
+        cameraMatrix.put(0,0, cameraArray);
+
+        double[] distArray =  {
+                -0.152963, 0.017530, -0.001107, -0.000210, 0.000000,
+        };
+
+        distorsionMatrix.put(0,0, distArray);
+    }
 
     @Override
     protected void runPlan1() {
@@ -85,6 +117,8 @@ public class MainService extends KiboRpcService {
     @Override
     protected void runPlan2() {
         Log.i(LOGTAG, "apijudgeSendStart");
+        cameraMatInit();
+
         api.judgeSendStart();
         String p1_1_con[] = new String[2];
         String p1_2_con[] = new String[2];
@@ -228,18 +262,76 @@ public class MainService extends KiboRpcService {
         }
 
         moveTo(px3,py3,pz3,qx3,qy3,qz3,Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3)));
+
+        WrapQuaternion yminqua = new WrapQuaternion(0, 0, 0.707f, -0.707f);
+        relativeMoveTo(new Vec3(0,0,0),yminqua);
+
         Mat ids = new Mat();
-        while (arv == 0) {
-            Mat source = api.getMatNavCam();
-            ImageWrite(source, "DICT_5X5_250");
-            Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
-            List<Mat> corners = new ArrayList<>();
-            Aruco.detectMarkers(source, dictionary, corners, ids);
-            arv = (int) ids.get(0, 0)[0];
+
+        double ar_roll_angle=0, ar_pitch_angle=0, ar_yaw_angle=0, ar_x=0, ar_y=0, ar_z=0;
+        while (arv == 0 && loopCounter < LOOPSIZE) {
+            try {
+                Log.d(LOGTAG,"Try Read AR! Start");
+
+                Mat source = tryMatNavCam();
+                ImageWrite(source, "DICT_5X5_250");
+
+                Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
+                List<Mat> corners = new ArrayList<>();
+                Aruco.detectMarkers(source, dictionary, corners, ids);
+                Log.d(LOGTAG,"Try Read AR! Aruco.detectMarkers");
+
+                if (0 < corners.size()) {
+                    Log.d(LOGTAG,"Try Read AR! detected!");
+                    arv = (int) ids.get(0, 0)[0];
+                    Log.d(LOGTAG,"Try Read AR! arv: "+arv);
+
+                    Mat rotationMatrix = new Mat(), translationVectors = new Mat();
+                    Aruco.estimatePoseSingleMarkers(corners, arucoMarkerLength, cameraMatrix, distorsionMatrix,
+                            rotationMatrix, translationVectors);
+                    Log.d(LOGTAG,"Try Read AR! estimatePoseSingleMarkers!");
+                    Log.d(LOGTAG,"Try Read AR! distorsionMatrix: "+translationVectors.dump());
+                    ar_x = translationVectors.get(0,0)[0];
+                    ar_y = translationVectors.get(0, 0)[1];
+                    ar_z = translationVectors.get(0, 0)[2];
+
+                    Log.d(LOGTAG,"Try Read AR! rotationMatrix: "+rotationMatrix.dump());
+                    ar_roll_angle = rotationMatrix.get(0, 0)[0];//roll
+                    ar_pitch_angle = rotationMatrix.get(0, 0)[1];//pitch
+                    ar_yaw_angle = rotationMatrix.get(0, 0)[2];//yaw
+
+                    if (ar_pitch_angle < 0) {
+                        ar_roll_angle = -ar_roll_angle;
+                        ar_pitch_angle = -ar_pitch_angle;
+                        ar_yaw_angle = -ar_yaw_angle;
+                    }
+                    Log.d(LOGTAG,"Try Read AR! ar_x: "+ar_x);
+                    Log.d(LOGTAG,"Try Read AR! ar_y: "+ar_y);
+                    Log.d(LOGTAG,"Try Read AR! ar_z: "+ar_z);
+                    Log.d(LOGTAG,"Try Read AR! ar_roll_angle: "+ar_roll_angle);
+                    Log.d(LOGTAG,"Try Read AR! ar_pitch_angle: "+ar_pitch_angle);
+                    Log.d(LOGTAG,"Try Read AR! ar_yaw_angle: "+ar_yaw_angle);
+                }
+            } catch (Exception e) {
+                Log.d(LOGTAG, "exception readAR"+ e.getLocalizedMessage());
+            }
+            loopCounter++;
         }
 
-        api.judgeSendDiscoveredAR(Integer.toString(arv));
-        api.laserControl(true);
+        if (arv != 0){
+            api.judgeSendDiscoveredAR(Integer.toString(arv));
+            double xzsize = arucoToTargetDist/Math.sqrt(2);
+            Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)+NavLaserGap[0],0+NavLaserGap[1],0+(xzsize+ar_z)+NavLaserGap[2]);
+            relativeMoveTo(calmovetopoint,yminqua);
+
+            Log.d(LOGTAG,"DO LASERCTL!");
+            api.laserControl(true);
+        }else{
+            Log.d(LOGTAG, "failed readAR action:(");
+        }
+        Mat finishimage = tryMatNavCam();
+        ImageWrite(finishimage, "FINISH");
+
         api.judgeSendFinishSimulation();
 
     }
@@ -510,17 +602,17 @@ public class MainService extends KiboRpcService {
 
         ImageWrite(nmat, key);
 
-        // 1:zxing decode
-        try {
-            Log.d(LOGTAG,"detectQrcode 1:zxing decode");
-            String result = zxingDetectDecodeQrcode(nmat);
-            if (!result.equals("error") && 0 < result.length()){
-                return result;
-            }
-            Log.d(LOGTAG,"detectQrcode 1: qr rect base cutimage & decode");
-        }catch (Exception e){
-            Log.d(LOGTAG, "1:zxing decode exception detectQrcode: "+ e.getLocalizedMessage());
-        }
+//        // 1:zxing decode
+//        try {
+//            Log.d(LOGTAG,"detectQrcode 1:zxing decode");
+//            String result = zxingDetectDecodeQrcode(nmat);
+//            if (!result.equals("error") && 0 < result.length()){
+//                return result;
+//            }
+//            Log.d(LOGTAG,"detectQrcode 1: qr rect base cutimage & decode");
+//        }catch (Exception e){
+//            Log.d(LOGTAG, "1:zxing decode exception detectQrcode: "+ e.getLocalizedMessage());
+//        }
 
         //2: qr rect base cutimage & decode
         List<Mat> points = rectTrimPoint(nmat);
@@ -774,7 +866,7 @@ public class MainService extends KiboRpcService {
         return destination;
     }
 
-    private Mat normalBinaryFilter(Mat nmat){
+    private Mat normalBinaryFilter1(Mat nmat){
         Log.d(LOGTAG,"normalBinaryImage try!");
 
         Imgproc.threshold(nmat, nmat, 200, 255, Imgproc.THRESH_BINARY_INV);
@@ -786,7 +878,17 @@ public class MainService extends KiboRpcService {
         return nmat;
     }
 
+    private Mat normalBinaryFilter2(Mat nmat){
+        Log.d(LOGTAG,"normalBinaryFilter2 try!");
 
+        Core.bitwise_not(nmat, nmat);
+        ImageWrite(nmat, "normalBinaryImage bitwise_not");
+
+        Imgproc.threshold(nmat, nmat, 200, 255, Imgproc.THRESH_BINARY_INV);
+        ImageWrite(nmat, "normalBinaryImage threshold1");
+
+        return nmat;
+    }
     //-----------------AR processing----------------------
 
 
