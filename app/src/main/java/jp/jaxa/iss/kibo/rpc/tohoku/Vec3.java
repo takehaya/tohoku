@@ -46,18 +46,20 @@ public class Vec3 extends Point {
         return obj.getClass() == this.getClass() && vec3.getX() == getX() && vec3.getY() == getY() && vec3.getZ() == getZ();
     }
 
+    public Vec3 toMinus(){
+        return new Vec3(-getX(),-getY(),-getZ());
+    }
+
     public Vec3 add(Vec3 v) {
-        setX(getX() + v.getX());
-        setY(getY() + v.getY());
-        setZ(getZ() + v.getZ());
-        return this;
+        return new Vec3(getX() + v.getX(),getY() + v.getY(),getZ() + v.getZ());
+    }
+
+    public Vec3 sub(Vec3 v){
+        return add(v.toMinus());
     }
 
     public Vec3 mul(double x) {
-        setX(getX() * x);
-        setY(getY() * x);
-        setZ(getZ() * x);
-        return this;
+        return new Vec3(getX() * x,getY() * x,getY() * x);
     }
 
     public double dot(Vec3 v) {
