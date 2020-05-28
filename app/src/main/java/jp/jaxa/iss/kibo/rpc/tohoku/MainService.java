@@ -125,7 +125,7 @@ public class MainService extends KiboRpcService {
 
         int loopCounter = 0;
         String p1_3 = "";
-        p1_3 = scanKinematicBarcode(target1_3_v, target1_3_q, QRInfoType.PosZ);
+        p1_3 = scanBarcodeMoveTo(target1_3_v, target1_3_q, QRInfoType.PosZ);
         if (p1_3.equals("error")) {
             do {
                 moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q);
@@ -141,7 +141,7 @@ public class MainService extends KiboRpcService {
         }
 
         String p1_1 = "";
-        p1_1 = scanKinematicBarcode(target1_1_v, target1_1_q, QRInfoType.PosX);
+        p1_1 = scanBarcodeMoveTo(target1_1_v, target1_1_q, QRInfoType.PosX);
         if (p1_1.equals("error")) {
             do {
                 moveTo(target1_1_v.add(new Vec3(inc, 0, 0)), target1_1_q);
@@ -157,7 +157,7 @@ public class MainService extends KiboRpcService {
         }
 
         String p1_2  = "";
-        p1_2 = scanKinematicBarcode(target1_2_v, target1_2_q, QRInfoType.PosY);
+        p1_2 = scanBarcodeMoveTo(target1_2_v, target1_2_q, QRInfoType.PosY);
         if (p1_2.equals("error")) {
             do {
                 moveTo(target1_2_v.add(new Vec3(0, 0, inc)), target1_2_q);
@@ -177,7 +177,7 @@ public class MainService extends KiboRpcService {
         moveTo(road2_2_v, road2_2_q);
 
         String p2_1  = "";
-        p2_1 = scanKinematicBarcode(target2_1_v, target2_1_q, QRInfoType.QuaX);
+        p2_1 = scanBarcodeMoveTo(target2_1_v, target2_1_q, QRInfoType.QuaX);
         if (p2_1.equals("error")) {
             do {
                 moveTo(target2_1_v.add(new Vec3(-inc, 0,0)), target2_1_q);
@@ -194,7 +194,7 @@ public class MainService extends KiboRpcService {
         }
 
         String p2_2  = "";
-        p2_2 = scanKinematicBarcode(target2_2_v, target2_2_q, QRInfoType.QuaY);
+        p2_2 = scanBarcodeMoveTo(target2_2_v, target2_2_q, QRInfoType.QuaY);
         if (p2_2.equals("error")) {
             do {
                 moveTo(target2_2_v.add(new Vec3(inc, 0,0)), target2_2_q);
@@ -211,7 +211,7 @@ public class MainService extends KiboRpcService {
         }
 
         String p2_3  = "";
-        p2_3 = scanKinematicBarcode(target2_3_v, target2_3_q, QRInfoType.QuaZ);
+        p2_3 = scanBarcodeMoveTo(target2_3_v, target2_3_q, QRInfoType.QuaZ);
         if (p2_2.equals("error")) {
             do {
                 moveTo(target2_3_v.add(new Vec3(0, 0, inc)), target2_3_q);
@@ -365,11 +365,11 @@ public class MainService extends KiboRpcService {
         Mat snapshot = tryMatNavCam();
         String value = detectQrcode(snapshot, type.name());
         printAllPosition("position Scan");
-        while (value == null && loop < loopMax) {
+        while (value.equals("error") && loop < loopMax) {
             moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
             snapshot = tryMatNavCam();
             value = detectQrcode(snapshot, type.name());
-            if (value == null) {
+            if (value.equals("error")) {
                 double qx = api.getTrustedRobotKinematics().getOrientation().getX();
                 double qy = api.getTrustedRobotKinematics().getOrientation().getY();
                 double qz = api.getTrustedRobotKinematics().getOrientation().getZ();
@@ -389,7 +389,7 @@ public class MainService extends KiboRpcService {
             }
             loop++;
         }
-        if (value != "error") {
+        if (!value.equals("error")) {
             api.judgeSendDiscoveredQR(type.getInt() , value);
             System.out.println("valuesQR" + value);
         }
@@ -415,7 +415,7 @@ public class MainService extends KiboRpcService {
         Mat snapshot = tryMatNavCam();
         String value = detectQrcode(snapshot, type.name());
         double viewP = 0.025;
-        while (value == "error" && loop < loopMax) {
+        while (value.equals("error") && loop < loopMax) {
             if (loop%8 == 0) moveTo(pos_x,pos_y,pos_z,qua_x + viewP,qua_y,qua_z,qua_w);
             else if (loop%8 == 1) moveTo(pos_x,pos_y,pos_z,qua_x,qua_y + viewP,qua_z,qua_w);
             else if (loop%8 == 2) moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z + viewP,qua_w);
@@ -429,7 +429,7 @@ public class MainService extends KiboRpcService {
             value = detectQrcode(snapshot, type.name());
             loop++;
         }
-        if (value != "error") {
+        if (!value.equals("error")) {
             api.judgeSendDiscoveredQR(type.getInt() , value);
             Log.d(LOGTAG,"valuesQR" + value);
         }
