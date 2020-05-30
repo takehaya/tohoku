@@ -159,63 +159,61 @@ public class MainService extends KiboRpcService {
 
         moveTo(road1_1_v, road1_1_q);
         int loopCounter = 0;
+
         String p1_3 = "";
         p1_3 = scanBarcodeMoveTo(target1_3_v, target1_3_q, QRInfoType.PosZ);
-        if (p1_3.equals("error")) {
-            do {
-                moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q);
-                p1_3 = scanOnecBarcode(QRInfoType.PosZ);
-                if (!p1_3.equals("error")) {
-                    p1_3_con = p1_3.split(", ");
-                    pz3 = Double.parseDouble(p1_3_con[1]);
-                }
-                loopCounter++;
-            } while (!p1_3_con[0].equals("pos_z") && loopCounter < LOOPSIZE);
-            loopCounter = 0;
-        }else{
+        if (!p1_3.equals("error")) {
             p1_3_con = p1_3.split(", ");
             pz3 = Double.parseDouble(p1_3_con[1]);
         }
+        while (!p1_3_con[0].equals("pos_z") && loopCounter < LOOPSIZE){
+            moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q);
+            p1_3 = scanOnecBarcode(QRInfoType.PosZ);
+            if (!p1_3.equals("error")) {
+                p1_3_con = p1_3.split(", ");
+                pz3 = Double.parseDouble(p1_3_con[1]);
+            }
+            loopCounter++;
+        }
+        loopCounter = 0;
         Log.d(LOGTAG, "p1_3 = " + p1_3);
 
 
         String p1_1 = "";
         p1_1 = scanBarcodeMoveTo(target1_1_v, target1_1_q, QRInfoType.PosX);
-        if (p1_1.equals("error")) {
-            do {
-                moveTo(target1_1_v.add(new Vec3(inc, 0, 0)), target1_1_q);
-                p1_1 = scanOnecBarcode(QRInfoType.PosX);
-                if (!p1_1.equals("error")) {
-                    p1_1_con = p1_1.split(", ");
-                    px3 = Double.parseDouble(p1_1_con[1]);
-                }
-                loopCounter++;
-            } while (!p1_1_con[0].equals("pos_x") && loopCounter < LOOPSIZE);
-            loopCounter = 0;
-        }else {
+        if (!p1_1.equals("error")) {
             p1_1_con = p1_1.split(", ");
             px3 = Double.parseDouble(p1_1_con[1]);
         }
+        while (!p1_1_con[0].equals("pos_x") && loopCounter < LOOPSIZE){
+            moveTo(target1_1_v.add(new Vec3(inc, 0, 0)), target1_1_q);
+            p1_1 = scanOnecBarcode(QRInfoType.PosX);
+            if (!p1_1.equals("error")) {
+                p1_1_con = p1_1.split(", ");
+                px3 = Double.parseDouble(p1_1_con[1]);
+            }
+            loopCounter++;
+        }
+        loopCounter = 0;
         Log.d(LOGTAG, "p1_1 = " + p1_1);
 
 
         String p1_2  = "";
         p1_2 = scanBarcodeMoveTo(target1_2_v, target1_2_q, QRInfoType.PosY);
-        if (p1_2.equals("error")) {
-            do {
-                moveTo(target1_2_v.add(new Vec3(0, 0, inc)), target1_2_q);
-                p1_2 = scanOnecBarcode(QRInfoType.PosY);
-                if (!p1_2.equals("error")) {
-                    p1_2_con = p1_2.split(", ");
-                    py3 = Double.parseDouble(p1_2_con[1]);
-                }
-                loopCounter++;
-            } while (!p1_2_con[0].equals("pos_y") && loopCounter < LOOPSIZE);
-            loopCounter = 0;
-        }else{
+        if (!p1_2.equals("error")) {
             p1_2_con = p1_2.split(", ");
             py3 = Double.parseDouble(p1_2_con[1]);
         }
+        while (!p1_2_con[0].equals("pos_y") && loopCounter < LOOPSIZE){
+            moveTo(target1_2_v.add(new Vec3(0, 0, inc)), target1_2_q);
+            p1_2 = scanOnecBarcode(QRInfoType.PosY);
+            if (!p1_2.equals("error")) {
+                p1_2_con = p1_2.split(", ");
+                py3 = Double.parseDouble(p1_2_con[1]);
+            }
+            loopCounter++;
+        }
+        loopCounter = 0;
         Log.d(LOGTAG, "p1_2 = " + p1_2);
 
         moveTo(road2_1_v, road2_1_q);
@@ -223,61 +221,57 @@ public class MainService extends KiboRpcService {
 
         String p2_1  = "";
         p2_1 = scanBarcodeMoveTo(target2_1_v, target2_1_q, QRInfoType.QuaX);
-        if (p2_1.equals("error")) {
-            do {
-                moveTo(target2_1_v.add(new Vec3(-inc, 0,0)), target2_1_q);
-                p2_1 = scanOnecBarcode(QRInfoType.QuaX);
-                if (!p2_1.equals("error")) {
-                    p2_1_con = p2_1.split(", ");
-                    qx3 = Double.parseDouble(p2_1_con[1]);
-                }
-                loopCounter++;
-            } while (!p2_1_con[0].equals("qua_x") && loopCounter < LOOPSIZE);
-            loopCounter = 0;
-        }else{
+        if (!p2_1.equals("error")) {
             p2_1_con = p2_1.split(", ");
             qx3 = Double.parseDouble(p2_1_con[1]);
         }
+        while (!p2_1_con[0].equals("qua_x") && loopCounter < LOOPSIZE){
+            moveTo(target2_1_v.add(new Vec3(-inc, 0,0)), target2_1_q);
+            p2_1 = scanOnecBarcode(QRInfoType.QuaX);
+            if (!p2_1.equals("error")) {
+                p2_1_con = p2_1.split(", ");
+                qx3 = Double.parseDouble(p2_1_con[1]);
+            }
+            loopCounter++;
+        }
+        loopCounter = 0;
         Log.d(LOGTAG, "p2_1 = " + p2_1);
-
 
         String p2_2  = "";
         p2_2 = scanBarcodeMoveTo(target2_2_v, target2_2_q, QRInfoType.QuaY);
-        if (p2_2.equals("error")) {
-            do {
-                moveTo(target2_2_v.add(new Vec3(inc, 0,0)), target2_2_q);
-                p2_2 = scanOnecBarcode(QRInfoType.QuaY);
-                if (!p2_2.equals("error")) {
-                    p2_2_con = p2_2.split(", ");
-                    qy3 = Double.parseDouble(p2_2_con[1]);
-                }
-                loopCounter++;
-            } while (!p2_2_con[0].equals("qua_y") && loopCounter < LOOPSIZE);
-            loopCounter = 0;
-        }else{
+        if (!p2_2.equals("error")) {
             p2_2_con = p2_2.split(", ");
             qy3 = Double.parseDouble(p2_2_con[1]);
         }
+        while (!p2_2_con[0].equals("qua_y") && loopCounter < LOOPSIZE){
+            moveTo(target2_2_v.add(new Vec3(inc, 0,0)), target2_2_q);
+            p2_2 = scanOnecBarcode(QRInfoType.QuaY);
+            if (!p2_2.equals("error")) {
+                p2_2_con = p2_2.split(", ");
+                qy3 = Double.parseDouble(p2_2_con[1]);
+            }
+            loopCounter++;
+        }
+        loopCounter = 0;
         Log.d(LOGTAG, "p2_2 = " + p2_2);
 
 
         String p2_3  = "";
         p2_3 = scanBarcodeMoveTo(target2_3_v, target2_3_q, QRInfoType.QuaZ);
-        if (p2_2.equals("error")) {
-            do {
-                moveTo(target2_3_v.add(new Vec3(0, 0, inc)), target2_3_q);
-                p2_3 = scanOnecBarcode(QRInfoType.QuaZ);
-                if (!p2_3.equals("error")) {
-                    p2_3_con = p2_3.split(", ");
-                    qz3 = Double.parseDouble(p2_3_con[1]);
-                }
-                loopCounter++;
-            } while (!p2_3_con[0].equals("qua_z") && loopCounter < LOOPSIZE);
-            loopCounter = 0;
-        }else{
+        if (!p2_3.equals("error")) {
             p2_3_con = p2_3.split(", ");
             qz3 = Double.parseDouble(p2_3_con[1]);
         }
+        while (!p2_3_con[0].equals("qua_z") && loopCounter < LOOPSIZE){
+            moveTo(target2_3_v.add(new Vec3(0, 0, inc)), target2_3_q);
+            p2_3 = scanOnecBarcode(QRInfoType.QuaZ);
+            if (!p2_3.equals("error")) {
+                p2_3_con = p2_3.split(", ");
+                qz3 = Double.parseDouble(p2_3_con[1]);
+            }
+            loopCounter++;
+        }
+        loopCounter = 0;
         Log.d(LOGTAG, "p2_3 = " + p2_3);
 
         double pw3 = Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3));
