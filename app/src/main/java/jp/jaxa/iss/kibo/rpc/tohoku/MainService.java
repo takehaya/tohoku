@@ -271,7 +271,7 @@ public class MainService extends KiboRpcService {
         }
 
         WrapQuaternion yminqua = new WrapQuaternion(0, 0, 0.707f, -0.707f);
-        relativeMoveTo(new Vec3(0,0,0.1),yminqua);
+//        relativeMoveTo(new Vec3(0,0,0.1),yminqua);
 
         Mat ids = new Mat();
 
@@ -319,7 +319,7 @@ public class MainService extends KiboRpcService {
                     Log.d(LOGTAG,"Try Read AR! ar_pitch_angle: "+ar_pitch_angle);
                     Log.d(LOGTAG,"Try Read AR! ar_yaw_angle: "+ar_yaw_angle);
                 }else{
-                    relativeMoveTo(new Vec3(0,0,0.1),yminqua);
+//                    relativeMoveTo(new Vec3(0,0,0.1),yminqua);
                     Log.d(LOGTAG,"Try Read AR! notfound ar");
 
                 }
