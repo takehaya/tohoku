@@ -77,11 +77,11 @@ public class MainService extends KiboRpcService {
     private Mat cameraMatrix;
     private Mat distorsionMatrix;
     private final float arucoMarkerLength = 0.05f;//Length of one side
-    private final float arucoToTargetDist = 0.2f;//Length of one side
+    private final float arucoToTargetDist = 0.2f;// 0.2m
 
-    private final float[] NavCamvec = new float[]{-0.0422f, 0.117f, -0.0826f};//xyz
-
-    private final float[] Laservec = new float[]{0.0572f, 0.1302f, -0.1111f};
+    private final float[] NavCamvec = new float[]{-0.0422f, -0.117f, -0.0826f};//xyz
+    private final float[] HazCamvec = new float[]{0.0352f, -0.1328f, -0.0826f};
+    private final float[] Laservec = new float[]{0.0572f, -0.1302f, -0.1111f};
 
     private final float[] NavLaserGap = new float[]{0.0994f, 0.0132f, 0.0285f};//abs(nav->laser)
 
@@ -141,7 +141,8 @@ public class MainService extends KiboRpcService {
         WrapQuaternion road1_1_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
         WrapQuaternion target1_3_q = new WrapQuaternion(0, 0.707f, 0, 0.707f);
         WrapQuaternion target1_1_q = new WrapQuaternion(0, 0, 0, -1);
-        WrapQuaternion target1_2_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
+//        WrapQuaternion target1_2_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
+        WrapQuaternion target1_2_q = new WrapQuaternion(0.707f, 0, 0.707f, 0);
 
         Vec3 road2_1_v = new Vec3(10.5, -6.45, 5.1);
         Vec3 road2_2_v = new Vec3(11.35, -7.3, 4.9);
@@ -153,10 +154,10 @@ public class MainService extends KiboRpcService {
         WrapQuaternion road2_2_q = new WrapQuaternion(0, 0, 0.707f, -0.707f);
         WrapQuaternion target2_1_q = new WrapQuaternion(0, 0, 1,0);
         WrapQuaternion target2_2_q = new WrapQuaternion(0, 0, 0,-1);
-        WrapQuaternion target2_3_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
+//        WrapQuaternion target2_3_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
+        WrapQuaternion target2_3_q = new WrapQuaternion(0.707f, 0, 0.707f, 0);
 
         moveTo(road1_1_v, road1_1_q);
-
         int loopCounter = 0;
         String p1_3 = "";
         p1_3 = scanBarcodeMoveTo(target1_3_v, target1_3_q, QRInfoType.PosZ);
@@ -270,7 +271,7 @@ public class MainService extends KiboRpcService {
         }
 
         WrapQuaternion yminqua = new WrapQuaternion(0, 0, 0.707f, -0.707f);
-        relativeMoveTo(new Vec3(0,0,0.1),yminqua);
+//        relativeMoveTo(new Vec3(0,0,0.1),yminqua);
 
         Mat ids = new Mat();
 
@@ -318,7 +319,7 @@ public class MainService extends KiboRpcService {
                     Log.d(LOGTAG,"Try Read AR! ar_pitch_angle: "+ar_pitch_angle);
                     Log.d(LOGTAG,"Try Read AR! ar_yaw_angle: "+ar_yaw_angle);
                 }else{
-                    relativeMoveTo(new Vec3(0,0,0.1),yminqua);
+//                    relativeMoveTo(new Vec3(0,0,0.1),yminqua);
                     Log.d(LOGTAG,"Try Read AR! notfound ar");
 
                 }
@@ -901,7 +902,24 @@ public class MainService extends KiboRpcService {
     }
     //-----------------AR processing----------------------
 
+//    private WrapQuaternion LaserTargetRoatation(Vec3 arvec){
+//        double cosval = LaserToTargetVec(arvec).dot(AstrobeeLaserNormalVec());
+//        double theta = Math.acos(cosval);
+//
+//
+//    }
 
+    private Vec3 LaserToTargetVec(Vec3 arvec){
+        Vec3 laser = getLaserVec();
+        Vec3 target = targetVec(arvec);
+        return target.sub(laser);
+    }
+
+    private Vec3 targetVec(Vec3 arvec){
+        double xzsize = arucoToTargetDist/Math.sqrt(2);
+
+        return arvec.add(new Vec3(xzsize, 0, xzsize));
+    }
     //-----------------basic action functions----------------------
 
     private WrapQuaternion relativeStableQuaternion(WrapQuaternion targetQua, WrapQuaternion currentQua){
@@ -1030,7 +1048,7 @@ public class MainService extends KiboRpcService {
 
     //-----------------basic utils functions----------------------
 
-    public void printPosition(String label, Point pos, Quaternion qua){
+    private void printPosition(String label, Point pos, Quaternion qua){
         printPosition(label, pos.getX(), pos.getY(), pos.getZ(), qua.getX(), qua.getY(), qua.getZ(), qua.getW());
     }
 
@@ -1054,6 +1072,61 @@ public class MainService extends KiboRpcService {
         Log.d(LOGTAG,"IMU Orientation: " + api.getImu().getOrientation().toString());
         printPosition("moving",x,y,z, qx,qy,qz,qw);
         Log.d(LOGTAG,"<" + lable + ">");
+    }
+
+    private Vec3 Vec3PositionNow(){
+        double x =  api.getTrustedRobotKinematics().getPosition().getX();
+        double y =  api.getTrustedRobotKinematics().getPosition().getY();
+        double z =  api.getTrustedRobotKinematics().getPosition().getZ();
+
+        return new Vec3(x,y,z);
+    }
+
+    private WrapQuaternion QuaPositionNow(){
+        double qx = api.getTrustedRobotKinematics().getOrientation().getX();
+        double qy = api.getTrustedRobotKinematics().getOrientation().getY();
+        double qz = api.getTrustedRobotKinematics().getOrientation().getZ();
+        double qw = api.getTrustedRobotKinematics().getOrientation().getW();
+
+        return new WrapQuaternion((float) qx, (float)qy, (float)qz, (float)qw);
+    }
+
+    private Vec3 AstrobeeLaserNormalVec(){
+        Vec3 nav = getNavCamVec();
+        Vec3 haz = getHazCamVec();
+        Vec3 laser = getLaserVec();
+
+        Vec3 s1 = nav.sub(laser);
+        Vec3 s2 = haz.sub(laser);
+
+        return s1.cross(s2);
+    }
+
+    private Vec3 getNavCamVec(){
+        Vec3 v = new Vec3(NavCamvec[0], NavCamvec[1], NavCamvec[2]);
+        Vec3 vpos = Vec3PositionNow();
+        WrapQuaternion qpos = QuaPositionNow();
+        Vec3 nv = WrapQuaternion.vec3mul(qpos, v);
+
+        return vpos.add(nv);
+    }
+
+    private Vec3 getHazCamVec(){
+        Vec3 v = new Vec3(HazCamvec[0], HazCamvec[1], HazCamvec[2]);
+        Vec3 vpos = Vec3PositionNow();
+        WrapQuaternion qpos = QuaPositionNow();
+        Vec3 nv = WrapQuaternion.vec3mul(qpos, v);
+
+        return vpos.add(nv);
+    }
+
+    private Vec3 getLaserVec(){
+        Vec3 v = new Vec3(Laservec[0], Laservec[1], Laservec[2]);
+        Vec3 vpos = Vec3PositionNow();
+        WrapQuaternion qpos = QuaPositionNow();
+        Vec3 nv = WrapQuaternion.vec3mul(qpos, v);
+
+        return vpos.add(nv);
     }
 }
 
