@@ -297,8 +297,9 @@ public class MainService extends KiboRpcService {
 
                 Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
                 List<Mat> corners = new ArrayList<>();
+                Log.d(LOGTAG,"Try Read AR! Aruco.detectMarkers start");
                 Aruco.detectMarkers(source, dictionary, corners, ids);
-                Log.d(LOGTAG,"Try Read AR! Aruco.detectMarkers");
+                Log.d(LOGTAG,"Try Read AR! Aruco.detectMarkers end");
 
                 if (0 < corners.size()) {
                     Log.d(LOGTAG,"Try Read AR! detected!");
@@ -431,7 +432,7 @@ public class MainService extends KiboRpcService {
         Log.d(LOGTAG,"start scanBarcode");
         Mat snapshot = api.getMatNavCam();
         String value = detectQrcode(snapshot, type.name());
-        if (value != "error") {
+        if (!value.equals("error") && value.split(", ")[0].equals(type.getKey())) {
             api.judgeSendDiscoveredQR(type.getInt() , value);
             Log.d(LOGTAG,"valuesQR" + value);
         }
@@ -450,7 +451,7 @@ public class MainService extends KiboRpcService {
         while (loopCounter < LOOP_MAX || value == "error") {
             Mat snapshot = api.getMatNavCam();
             value = detectQrcode(snapshot, type.name());
-            if (value != "error") {
+            if (!value.equals("error") && value.split(", ")[0].equals(type.getKey())) {
                 api.judgeSendDiscoveredQR(type.getInt() , value);
                 Log.d(LOGTAG,"valuesQR" + value);
             }
@@ -484,7 +485,7 @@ public class MainService extends KiboRpcService {
             moveTo(pos_x,pos_y,pos_z,qua_x,qua_y,qua_z,qua_w);
             snapshot = tryMatNavCam();
             value = detectQrcode(snapshot, type.name());
-            if (value.equals("error")) {
+            if (!value.equals("error") && value.split(", ")[0].equals(type.getKey())) {
                 double qx = api.getTrustedRobotKinematics().getOrientation().getX();
                 double qy = api.getTrustedRobotKinematics().getOrientation().getY();
                 double qz = api.getTrustedRobotKinematics().getOrientation().getZ();
@@ -504,7 +505,7 @@ public class MainService extends KiboRpcService {
             }
             loop++;
         }
-        if (!value.equals("error")) {
+        if (!value.equals("error") && value.split(", ")[0].equals(type.getKey())) {
             api.judgeSendDiscoveredQR(type.getInt() , value);
             System.out.println("valuesQR" + value);
         }
@@ -544,7 +545,7 @@ public class MainService extends KiboRpcService {
             value = detectQrcode(snapshot, type.name());
             loop++;
         }
-        if (!value.equals("error")) {
+        if (!value.equals("error") && value.split(", ")[0].equals(type.getKey())) {
             api.judgeSendDiscoveredQR(type.getInt() , value);
             Log.d(LOGTAG,"valuesQR" + value);
         }
@@ -579,7 +580,7 @@ public class MainService extends KiboRpcService {
             value =  detectQrcode(snapshot, type.name());
             loop++;
         }
-        if (value != "error") {
+        if (!value.equals("error") && value.split(", ")[0].equals(type.getKey())) {
             api.judgeSendDiscoveredQR(type.getInt() , value);
             Log.d(LOGTAG,"valuesQR" + value);
         }
