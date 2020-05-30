@@ -76,4 +76,26 @@ public class WrapQuaternion extends Quaternion {
     {
         return a.getX() * b.getX() + a.getY() * b.getY() + a.getZ() * b.getZ() + a.getW() * b.getW();
     }
+
+    public static Vec3 vec3mul(WrapQuaternion rotation, Vec3 point)
+    {
+        float x = rotation.getX() * 2F;
+        float y = rotation.getY() * 2F;
+        float z = rotation.getZ() * 2F;
+        float xx = rotation.getX() * x;
+        float yy = rotation.getY() * y;
+        float zz = rotation.getZ() * z;
+        float xy = rotation.getX() * y;
+        float xz = rotation.getX() * z;
+        float yz = rotation.getY() * z;
+        float wx = rotation.getW() * x;
+        float wy = rotation.getW() * y;
+        float wz = rotation.getW() * z;
+
+        double vx = (1F - (yy + zz)) * point.getX() + (xy - wz) * point.getY() + (xz + wy) * point.getZ();
+        double vy = (xy + wz) * point.getX() + (1F - (xx + zz)) * point.getY() + (yz - wx) * point.getZ();
+        double vz = (xz - wy) * point.getX() + (yz + wx) * point.getY() + (1F - (xx + yy)) * point.getZ();
+        return new Vec3(vx, vy, vz);
+    }
+
 }
