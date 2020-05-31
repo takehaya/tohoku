@@ -27,7 +27,6 @@ import org.opencv.objdetect.QRCodeDetector;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -71,6 +70,8 @@ public class MainService extends KiboRpcService {
     public static final Boolean DOJAXA = true;
     public static final String LOGTAG = "TohokuKibo";
     public static final String EPOCK_UNIQUE_STR = UUID.randomUUID().toString().substring(4);
+
+    private static final int FAIL_AR_DECODE = -10000;
 
     private AstrobeeField AstrobeeNode = new AstrobeeField(10.95, -3.75, 4.85, 0, 0, 0.707, -0.707);
 
@@ -278,9 +279,11 @@ public class MainService extends KiboRpcService {
         Result.Status q3status = moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
 
         if (q3status != Result.Status.OK){
+            Log.d(LOGTAG,"q3status != Result.Status.OK True");
             moveTo(11, py3, 4.7, qx3,qy3,qz3,pw3);
             moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
         }
+
 
         WrapQuaternion yminqua = new WrapQuaternion(0, 0, 0.707f, -0.707f);
 //        relativeMoveTo(new Vec3(0,0,0.1),yminqua);
@@ -400,32 +403,47 @@ public class MainService extends KiboRpcService {
     }
 
     //-------------ctl functions--------------------
-    private void keepInZone(){
-        double[] kiz_x = {10.25,11.65};
-        double[] kiz_y = {-9.75,-3};
-        double[] kiz_z= {4.2,5.6};
-        double x = api.getTrustedRobotKinematics().getPosition().getX();
-        double y = api.getTrustedRobotKinematics().getPosition().getY();
-        double z = api.getTrustedRobotKinematics().getPosition().getZ();
-        Log.d(LOGTAG,"Keep Zone");
+    private Result.Status keepInZone(){
+        Log.i(LOGTAG, "keepInZone fixer start");
+
+        final double[] kiz_x = {10.25,11.65};
+        final double[] kiz_y = {-9.75,-3};
+        final double[] kiz_z= {4.2,5.6};
+
+        double xx = 0;
+        double yy = 0;
+        double zz = 0;
+
+        double x =  api.getTrustedRobotKinematics().getPosition().getX();
+        double y =  api.getTrustedRobotKinematics().getPosition().getY();
+        double z =  api.getTrustedRobotKinematics().getPosition().getZ();
+
+        Log.d(LOGTAG,"Keep In Zone");
         if (x < kiz_x[0]){
-            relativeMoveTo(kiz_x[0] - x + 0.1,0,0,0,0,0,0);
+            xx = kiz_x[0] - x + 0.1;
         }
         else if (x > kiz_x[1]){
-            relativeMoveTo(x - kiz_x[0] - 0.1,0,0,0,0,0,0);
+            xx = x - kiz_x[0] - 0.1;
         }
         if (y < kiz_y[0]){
-            relativeMoveTo(0,kiz_y[0] - y + 0.1,0,0,0,0,0);
+            yy = kiz_y[0] - y + 0.1;
         }
         else if (y > kiz_y[1]){
-            relativeMoveTo(0,y - kiz_y[0] - 0.1,0,0,0,0,0);
+            yy = y - kiz_y[0] - 0.1;
         }
         if (z < kiz_z[0]){
-            relativeMoveTo(0,0,kiz_z[0] - z + 0.1,0,0,0,0);
+            zz = kiz_z[0] - z + 0.1;
         }
         else if (z > kiz_z[1]){
-            relativeMoveTo(0,0,z - kiz_z[0] - 0.1,0,0,0,0);
+            zz = z - kiz_z[0] - 0.1;
         }
+        Log.i(LOGTAG, "keepInZone fixer xx:" + xx);
+        Log.i(LOGTAG, "keepInZone fixer yy:" + yy);
+        Log.i(LOGTAG, "keepInZone fixer zz:" + zz);
+        if (xx !=0 || yy != 0|| zz!=0){
+            return relativeMoveTo(new Vec3(xx, yy, zz), new WrapQuaternion(0,0,0,0));
+        }
+        return null;
     }
 
     private String scanOnecBarcode(QRInfoType type){
@@ -639,10 +657,10 @@ public class MainService extends KiboRpcService {
 //        }
 
         //2: qr rect base cutimage & decode
-        List<Mat> points = rectTrimPoint(nmat);
+        List<Mat> points = QRRectTrimPoint(nmat);
         String result = "";
         if(points != null){
-            Log.d(LOGTAG,"detectQrcode 2: points.size(): " + points.size());
+            Log.d(LOGTAG,"detectQrcode 1: points.size(): " + points.size());
             for(int i=0; i< points.size(); i++){
                 Mat writemat = pointCuting(nmat, points.get(i));
                 ImageWrite(writemat, key+"-pointCuting");
@@ -654,7 +672,7 @@ public class MainService extends KiboRpcService {
                         return result;
                     }
                 }catch (Exception e){
-                    Log.d(LOGTAG, "2: qr rect base cutimage & decode/exception detectQrcode: "+ e.getLocalizedMessage());
+                    Log.d(LOGTAG, "1: qr rect base cutimage & decode/exception detectQrcode: "+ e.getLocalizedMessage());
                 }
             }
         }
@@ -811,8 +829,8 @@ public class MainService extends KiboRpcService {
         return mat;
     }
 
-    private List<Mat> rectTrimPoint(Mat nmat){
-        Log.d(LOGTAG,"rectTrimPoint try");
+    private List<Mat> QRRectTrimPoint(Mat nmat){
+        Log.d(LOGTAG,"QRRectTrimPoint try");
 
         Mat fmap = nmat.clone();
 
@@ -825,7 +843,7 @@ public class MainService extends KiboRpcService {
         Mat hierarchy = Mat.zeros(new Size(5,5), CvType.CV_8UC1);
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Imgproc.findContours(fmap, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-        Log.d(LOGTAG,"rectTrimPoint contours.size: " + contours.size());
+        Log.d(LOGTAG,"QRRectTrimPoint contours.size: " + contours.size());
 
         List<Mat> retcontour = new ArrayList<Mat>();
 
@@ -845,7 +863,7 @@ public class MainService extends KiboRpcService {
             MatOfPoint2f contours2f = new MatOfPoint2f(ptmat.toArray());
             MatOfPoint2f approx2f = new MatOfPoint2f();
             double ep = Imgproc.arcLength(contours2f, true);
-            Imgproc.approxPolyDP(contours2f, approx2f, ep * 0.04, true);
+            Imgproc.approxPolyDP(contours2f, approx2f, ep * 0.05, true);
 
             // Obtaining a convex hull
             MatOfPoint approx = new MatOfPoint(approx2f.toArray());
@@ -914,6 +932,127 @@ public class MainService extends KiboRpcService {
         return nmat;
     }
     //-----------------AR processing----------------------
+
+    private List<Mat> ARRectTrimPoint(Mat nmat){
+        Log.d(LOGTAG,"ARRectTrimPoint try");
+
+        Mat fmap = nmat.clone();
+        Core.bitwise_not(fmap, fmap);
+        ImageWrite(fmap, "bitwise_not");
+
+        Imgproc.threshold(fmap, fmap, 240, 255, Imgproc.THRESH_BINARY_INV);
+        ImageWrite(fmap, "threshold1");
+
+        Imgproc.threshold(fmap, fmap, 0, 255, Imgproc.THRESH_BINARY_INV | Imgproc.THRESH_OTSU);
+        ImageWrite(fmap, "threshold2");
+
+        Mat hierarchy = Mat.zeros(new Size(5,5), CvType.CV_8UC1);
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Imgproc.findContours(fmap, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+        Log.d(LOGTAG,"ARRectTrimPoint contours.size: " + contours.size());
+
+        List<Mat> retcontour = new ArrayList<Mat>();
+
+        if (contours.size() <= 0){
+            return null;
+        }
+
+        for(int i = 0; i<contours.size(); i++){
+            MatOfPoint ptmat = contours.get(i);
+            double size = Imgproc.contourArea(ptmat);
+
+            if (!(300 < size &&size < 10000)) {
+                /* Ignore areas that are small in size. */
+                continue;
+            }
+
+            MatOfPoint2f contours2f = new MatOfPoint2f(ptmat.toArray());
+            MatOfPoint2f approx2f = new MatOfPoint2f();
+            double ep = Imgproc.arcLength(contours2f, true);
+            Imgproc.approxPolyDP(contours2f, approx2f, ep * 0.05, true);
+
+            // Obtaining a convex hull
+            MatOfPoint approx = new MatOfPoint(approx2f.toArray());
+            MatOfInt hull = new MatOfInt();
+            Imgproc.convexHull(approx, hull);
+
+
+            if(hull.size().height == 4){
+                Mat srcPointMat = new Mat(4,2,CvType.CV_32F);
+
+                double[] md = approx.get((int)hull.get(1,0)[0], 0);
+                srcPointMat.put(1, 0, new float[]{(float)md[0], (float)md[1]});
+
+                md = approx.get((int)hull.get(2,0)[0], 0);
+                srcPointMat.put(2, 0, new float[]{(float)md[0], (float)md[1]});
+
+                md = approx.get((int)hull.get(3,0)[0], 0);
+                srcPointMat.put(3, 0, new float[]{(float)md[0], (float)md[1]});
+
+                md = approx.get((int)hull.get(0,0)[0], 0);
+                srcPointMat.put(0, 0, new float[]{(float)md[0], (float)md[1]});
+                retcontour.add(srcPointMat);
+            }
+        }
+        return retcontour;
+    }
+
+    private int detectARmarker(Mat nmat, String key) {
+        Log.d(LOGTAG,"start detectARmarker");
+        if(nmat == null || nmat.empty()){
+            Log.d(LOGTAG,"nmat == null");
+            return FAIL_AR_DECODE;
+        }
+
+        ImageWrite(nmat, key);
+
+        List<Mat> points = ARRectTrimPoint(nmat);
+        int result = FAIL_AR_DECODE;
+        if(points != null){
+            Log.d(LOGTAG,"detectARmarker : points.size(): " + points.size());
+            for(int i=0; i< points.size(); i++){
+                Mat writemat = pointCuting(nmat, points.get(i));
+                ImageWrite(writemat, key+"-pointCuting");
+                writemat = sharpenFilter(writemat);
+                ImageWrite(writemat, key+"-sharpenFilter");
+                try {
+                    result = arucoDetectDecodeArmarker(writemat);
+                    if (result!=FAIL_AR_DECODE){
+                        return result;
+                    }
+                }catch (Exception e){
+                    Log.d(LOGTAG, "ar rect base cutimage & decode/exception detectARmarker: "+ e.getLocalizedMessage());
+                }
+            }
+        }
+        Log.d(LOGTAG,"detectARmarker not working all pattern:(");
+
+        return FAIL_AR_DECODE;
+    }
+
+    private int arucoDetectDecodeArmarker(Mat nmat){
+        Log.d(LOGTAG,"arucoDetectDecodeArmarker start");
+
+        if(nmat == null){
+            Log.d(LOGTAG,"nmat == null");
+            return FAIL_AR_DECODE;
+        }
+        final Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
+        List<Mat> corners = new ArrayList<>();
+        Mat ids = new Mat();
+        Log.d(LOGTAG,"arucoDetectDecodeArmarker Aruco.detectMarkers start");
+        Aruco.detectMarkers(nmat, dictionary, corners, ids);
+        Log.d(LOGTAG,"arucoDetectDecodeArmarker Aruco.detectMarkers end");
+
+        if (0 < corners.size()) {
+            Log.d(LOGTAG, "Try Read AR! detected!");
+            int arv = (int) ids.get(0, 0)[0];
+            Log.d(LOGTAG, "Try Read AR! arv: " + arv);
+
+            return arv;
+        }
+        return FAIL_AR_DECODE;
+    }
 
 //    private WrapQuaternion LaserTargetRoatation(Vec3 arvec){
 //        double cosval = LaserToTargetVec(arvec).dot(AstrobeeLaserNormalVec());
@@ -987,6 +1126,9 @@ public class MainService extends KiboRpcService {
             printPosition("moveToRun", point, quaternion);
             ++loopCounter;
         }
+        if(result.getStatus() == Result.Status.EXEC_FAILED){
+            keepInZone();
+        }
         return result.getStatus();
     }
 
@@ -1045,11 +1187,11 @@ public class MainService extends KiboRpcService {
     }
 
     private Mat tryMatNavCam() {
+        Log.i(MainService.LOGTAG, "tryMatNavCam start");
         final int LOOP_MAX = 3;
 
         Mat result = this.api.getMatNavCam();
         int loopCounter = 0;
-        Log.i(MainService.LOGTAG, "tryMatNavCam Result: " + (result!=null));
 
         while (result == null && loopCounter < LOOP_MAX) {
             result = this.api.getMatNavCam();
