@@ -1,23 +1,28 @@
 package jp.jaxa.iss.kibo.rpc.tohoku;
 
 enum QRInfoType {
-    PosX(0),
-    PosY(1),
-    PosZ(2),
-    QuaX(3),
-    QuaY(4),
-    QuaZ(5),
-    P3(6),
+    PosX(0,"pos_x"),
+    PosY(1,"pos_y"),
+    PosZ(2, "pos_z"),
+    QuaX(3, "qua_x"),
+    QuaY(4, "qua_y"),
+    QuaZ(5, "qua_z"),
+    P3(6, "p3"),
     ;
 
     private final int id;
-
-    private QRInfoType(final int id) {
+    private final String key;
+    QRInfoType(final int id, String key)
+    {
         this.id = id;
+        this.key = key;
     }
 
     public int getInt() {
         return this.id;
+    }
+    public String  getKey() {
+        return this.key;
     }
     public static QRInfoType getType(final int id) {
         QRInfoType[] types = QRInfoType.values();
