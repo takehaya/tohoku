@@ -169,9 +169,9 @@ public class MainService extends KiboRpcService {
             pz3 = Double.parseDouble(p1_3_con[1]);
         }
         while (!p1_3_con[0].equals("pos_z") && loopCounter < LOOPSIZE){
-            if(moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q)==null)
-                if(relativeMoveTo(0,0,-0.15,0,0,0,1)==null)
-                    if(moveTo(10.95, -3.95, 4.65,0,0,0,1)==null);
+            if(moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q)!=Result.Status.OK)
+                if(relativeMoveTo(0,0,-0.15,0,0,0,1)!=Result.Status.OK)
+                    if(moveTo(10.95, -3.95, 4.65,0,0,0,1)!=Result.Status.OK);
 
             p1_3 = scanOnecBarcode(QRInfoType.PosZ);
             if (!p1_3.equals("error")) {
@@ -286,7 +286,7 @@ public class MainService extends KiboRpcService {
         Vec3 p3v=WrapQuaternion.vec3mul(p3q,new Vec3(1,0,0));
         double ARy=-10-py3;
         Vec3 tv= new Vec3(px3,py3,pz3).add(p3v.mul( p3v.getY()/ARy));
-        moveTo(tv.getX(),py3,tv.getZ(),0, 0, 0.707f, -0.707f);
+        //moveTo(tv.getX(),py3,tv.getZ(),0, 0, 0.707f, -0.707f);
 
 
         if (q3status != Result.Status.OK){
