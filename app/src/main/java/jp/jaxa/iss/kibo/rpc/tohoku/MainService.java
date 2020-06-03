@@ -314,9 +314,12 @@ public class MainService extends KiboRpcService {
                             rotationMatrix, translationVectors);
                     Log.d(LOGTAG,"Try Read AR! estimatePoseSingleMarkers!");
                     Log.d(LOGTAG,"Try Read AR! distorsionMatrix: "+translationVectors.dump());
+//                    ar_x = translationVectors.get(0,0)[0];
+//                    ar_y = translationVectors.get(0, 0)[1];
+//                    ar_z = translationVectors.get(0, 0)[2];
                     ar_x = translationVectors.get(0,0)[0];
-                    ar_y = translationVectors.get(0, 0)[1];
-                    ar_z = translationVectors.get(0, 0)[2];
+                    ar_y = translationVectors.get(0, 0)[2];
+                    ar_z = translationVectors.get(0, 0)[1];
 
                     Log.d(LOGTAG,"Try Read AR! rotationMatrix: "+rotationMatrix.dump());
                     ar_roll_angle = rotationMatrix.get(0, 0)[0];//roll
@@ -349,7 +352,26 @@ public class MainService extends KiboRpcService {
             api.judgeSendDiscoveredAR(Integer.toString(arv));
             double xzsize = arucoToTargetDist/Math.sqrt(2);
             Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)-NavLaserGap[0],0,0+(xzsize+ar_z)-NavLaserGap[2]);
-            relativeMoveTo(calmovetopoint,yminqua);
+            moveTo(calmovetopoint, yminqua);
+
+            // TODO:: new impl laser shoutting
+            // get my pos
+//            Vec3 robotpos = Vec3PositionNow();
+//            WrapQuaternion robotqt = QuaPositionNow();
+//            Vec3 laserpos = getLaserVec(robotpos, robotqt);
+//            Vec3 camerapos = getNavCamVec(robotpos, robotqt);
+//            Log.d(LOGTAG, "laserpos readAR "+laserpos.toString());
+//            Log.d(LOGTAG, "camerapos readAR: "+camerapos.toString());
+//
+//            // get target pos
+//            Vec3 targetpos = targetVec(new Vec3(ar_x, -ar_y, ar_z), camerapos);
+//            Log.d(LOGTAG, "targetpos readAR: "+targetpos.toString());
+
+            // get angle
+//            WrapQuaternion ar_q = getTargetRotationAngle(targetpos, laserpos, robotpos);
+
+//            relativeMoveTo(new Vec3(0,0,0), ar_q);
+//            moveTo(robotpos, ar_q);
 
             Log.d(LOGTAG,"DO LASERCTL!");
             api.laserControl(true);
@@ -635,6 +657,77 @@ public class MainService extends KiboRpcService {
         return false;
     }
 
+    // If more than one QRcode finder pattern is found, the value is set to True.
+    // cf, https://github.com/opencv/opencv/blob/c3e8a82c9c0b18432627fe100db332b42d64b8d3/modules/objdetect/src/qrcode.cpp#L137
+    private Boolean isQRFinderPatternChecking(Mat nmat){
+        Log.d(LOGTAG,"isQRFinderPatternChecking start");
+
+        if(nmat == null || nmat.empty()){
+            Log.d(LOGTAG,"nmat == null");
+            return false;
+        }
+        Imgproc.threshold(nmat, nmat, 0, 255, Imgproc.THRESH_BINARY|Imgproc.THRESH_OTSU);
+
+        final int height_bin_barcode = nmat.rows();
+        final int width_bin_barcode = nmat.cols();
+        final int test_lines_size = 5;
+        double[] test_lines = new double[test_lines_size];
+        List<Integer> pixels_position = new ArrayList<Integer>();
+        final double eps_vertical = 0.2;
+
+        //Only half of the image is used for fast judgment.
+        for (int y=0; y < height_bin_barcode/2; y++){
+            pixels_position.clear();
+
+            int pos = 0;
+            for(; pos < width_bin_barcode; pos++){
+                if (nmat.get(y, pos)[0] == 0){break;}
+            }
+            if (pos == width_bin_barcode) { continue; }
+
+            pixels_position.add(pos);
+            pixels_position.add(pos);
+            pixels_position.add(pos);
+
+            int future_pixel = 255;
+
+            for(int x=pos; x<width_bin_barcode; x++){
+                if (nmat.get(y, x)[0] == future_pixel){
+                    future_pixel = ~future_pixel;
+                    pixels_position.add(x);
+                }
+            }
+
+            pixels_position.add(width_bin_barcode -1);
+            for (int i=2; i<pixels_position.size() -4; i+=2){
+                test_lines[0] = (double)(pixels_position.get(i-1) - pixels_position.get(i-2));
+                test_lines[1] = (double)(pixels_position.get(i  ) - pixels_position.get(i-1));
+                test_lines[2] = (double)(pixels_position.get(i+1) - pixels_position.get(i  ));
+                test_lines[3] = (double)(pixels_position.get(i+2) - pixels_position.get(i+1));
+                test_lines[4] = (double)(pixels_position.get(i+3) - pixels_position.get(i+2));
+
+                double length = 0.0, weight = 0.0;
+
+                for (int j=0; j<test_lines_size; j++){ length += test_lines[j];}
+
+                if (length == 0){continue;}
+                for (int j=0; j<test_lines_size; j++){
+                    if (j != 2) { weight += Math.abs((test_lines[j] / length) - 1.0/7.0); }
+                    else        { weight += Math.abs((test_lines[j] / length) - 3.0/7.0); }
+                }
+                Log.d(LOGTAG,"isQRFinderPatternChecking test_lines"+ test_lines);
+                Log.d(LOGTAG,"isQRFinderPatternChecking weight"+ weight);
+
+                if (weight < eps_vertical){
+                    return true;
+                }
+            }
+        }
+        Log.d(LOGTAG,"isQRFinderPatternChecking not found");
+
+        return false;
+    }
+
     private String detectQrcode(Mat nmat, String key) {
         Log.d(LOGTAG,"start detectQrcode");
         if(nmat == null || nmat.empty()){
@@ -644,19 +737,7 @@ public class MainService extends KiboRpcService {
 
         ImageWrite(nmat, key);
 
-//        // 1:zxing decode
-//        try {
-//            Log.d(LOGTAG,"detectQrcode 1:zxing decode");
-//            String result = zxingDetectDecodeQrcode(nmat);
-//            if (!result.equals("error") && 0 < result.length()){
-//                return result;
-//            }
-//            Log.d(LOGTAG,"detectQrcode 1: qr rect base cutimage & decode");
-//        }catch (Exception e){
-//            Log.d(LOGTAG, "1:zxing decode exception detectQrcode: "+ e.getLocalizedMessage());
-//        }
-
-        //2: qr rect base cutimage & decode
+        //1: qr rect base cutimage & decode
         List<Mat> points = QRRectTrimPoint(nmat);
         String result = "";
         if(points != null){
@@ -664,6 +745,13 @@ public class MainService extends KiboRpcService {
             for(int i=0; i< points.size(); i++){
                 Mat writemat = pointCuting(nmat, points.get(i));
                 ImageWrite(writemat, key+"-pointCuting");
+
+//                Boolean isqrfinder = isQRFinderPatternChecking(writemat);
+//                Log.d(LOGTAG,"detectQrcode 1: isQRFinderPatternChecking(writemat): " +isqrfinder);
+//                if (!isqrfinder){
+//                    continue;
+//                }
+
                 writemat = sharpenFilter(writemat);
                 ImageWrite(writemat, key+"-sharpenFilter");
                 try {
@@ -677,28 +765,6 @@ public class MainService extends KiboRpcService {
             }
         }
 
-//        // 3:opencv try detect & decode
-//        try {
-//             Log.d(LOGTAG,"detectQrcode 3:opencv try detect & decode");
-//            Mat detectPoint = opencvDetectQrcode(nmat);
-//            result = "";
-//            if (detectPoint != null){
-//                Mat writemat  = pointCuting(nmat, detectPoint);
-//                ImageWrite(writemat, key+"-pointCuting");
-//                writemat = sharpenFilter(writemat);
-//                ImageWrite(writemat, key+"-sharpenFilter");
-//
-//                if (!result.equals("error") && 0 < result.length()){
-//                    return result;
-//                }
-//                result = opencvDecodeDetectQrcode(writemat);
-//                if (!result.equals("error") && 0 < result.length()){
-//                    return result;
-//                }
-//            }
-//        }catch (Exception e){
-//            Log.d(LOGTAG, "3:opencv try detect & decode/exception detectQrcode: "+ e.getLocalizedMessage());
-//        }
 
         Log.d(LOGTAG,"detectQrcode not working all pattern:(");
         return "error";
@@ -746,44 +812,6 @@ public class MainService extends KiboRpcService {
             Log.d(LOGTAG, "exception readQR"+ e.getLocalizedMessage());
         }
         return "error";
-    }
-
-    private Mat opencvDetectQrcode(Mat nmat) {
-        if(nmat == null){
-            Log.d(LOGTAG,"nmat == null");
-            return null;
-        }
-
-        Log.d(LOGTAG, "opencvDetectQrcode try");
-
-        QRCodeDetector detector = new QRCodeDetector();
-        Mat point = new Mat();
-        Boolean isDetect = detector.detect(nmat, point);
-        Log.d(LOGTAG, "opencvDetectQrcode isDetect : " + isDetect);
-        if (!isDetect){
-            return null;
-        }
-        return point;
-    }
-
-    private String opencvDecodeDetectQrcode(Mat nmat) {
-        if(nmat == null){
-            Log.d(LOGTAG,"opencvDecodeDetectQrcode == null");
-            return "error";
-        }
-
-        Log.d(LOGTAG, "opencvDecodeDetectQrcode try");
-
-        try {
-            QRCodeDetector detector = new QRCodeDetector();
-            String result = detector.detectAndDecode(nmat);
-
-            Log.d(LOGTAG,"opencvDecodeDetectQrcode"+result);
-            return result;
-        } catch (Exception e) {
-            Log.d(LOGTAG, "exception opencvDecodeDetectQrcode"+ e.getLocalizedMessage());
-            return "error";
-        }
     }
 
     private Mat pointCuting(Mat nmat, Mat point){
@@ -1013,7 +1041,7 @@ public class MainService extends KiboRpcService {
             for(int i=0; i< points.size(); i++){
                 Mat writemat = pointCuting(nmat, points.get(i));
                 ImageWrite(writemat, key+"-pointCuting");
-                writemat = sharpenFilter(writemat);
+//                writemat = sharpenFilter(writemat);
                 ImageWrite(writemat, key+"-sharpenFilter");
                 try {
                     result = arucoDetectDecodeArmarker(writemat);
@@ -1054,23 +1082,33 @@ public class MainService extends KiboRpcService {
         return FAIL_AR_DECODE;
     }
 
-//    private WrapQuaternion LaserTargetRoatation(Vec3 arvec){
-//        double cosval = LaserToTargetVec(arvec).dot(AstrobeeLaserNormalVec());
-//        double theta = Math.acos(cosval);
-//
-//
-//    }
+    private WrapQuaternion getTargetRotationAngle(Vec3 target, Vec3 laser, Vec3 center){
+        Log.d(LOGTAG, "getTargetRotationAngle start!");
 
-    private Vec3 LaserToTargetVec(Vec3 arvec){
-        Vec3 laser = getLaserVec();
-        Vec3 target = targetVec(arvec);
-        return target.sub(laser);
+        Vec3 TOvec = target.sub(center);
+        Log.d(LOGTAG, "getTargetRotationAngle TOvec: "+ TOvec.toString());
+
+        Vec3 LTvec = laser.sub(center);
+        Log.d(LOGTAG, "getTargetRotationAngle LTvec: "+ LTvec.toString());
+
+        //XY
+        double ztheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getX(),TOvec.getY(),LTvec.getX(),LTvec.getY())));
+        //XZ
+        double ytheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getX(),TOvec.getZ(),LTvec.getX(),LTvec.getZ())));
+        //ZY
+        double xtheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getZ(),TOvec.getY(),LTvec.getZ(),LTvec.getY())));
+
+        Vec3 theta = new Vec3(xtheta, ytheta, ztheta);
+        Log.d(LOGTAG, "getTargetRotationAngle theta: "+ theta.toString());
+
+
+        return WrapQuaternion.EulerZYX(theta);
     }
 
-    private Vec3 targetVec(Vec3 arvec){
+    private Vec3 targetVec(Vec3 arvec, Vec3 center){
         double xzsize = arucoToTargetDist/Math.sqrt(2);
 
-        return arvec.add(new Vec3(xzsize, 0, xzsize));
+        return arvec.add(new Vec3(xzsize, 0, xzsize)).add(center);
     }
     //-----------------basic action functions----------------------
 
@@ -1192,12 +1230,14 @@ public class MainService extends KiboRpcService {
 
         Mat result = this.api.getMatNavCam();
         int loopCounter = 0;
+        Log.d(MainService.LOGTAG, "tryMatNavCam Result: " + (result!=null));
 
         while (result == null && loopCounter < LOOP_MAX) {
             result = this.api.getMatNavCam();
-            Log.i(MainService.LOGTAG, "tryMatNavCam Result: " + (result!=null));
+            Log.d(MainService.LOGTAG, "tryMatNavCam Result: " + (result!=null));
             ++loopCounter;
         }
+
         return result;
     }
 
@@ -1246,10 +1286,10 @@ public class MainService extends KiboRpcService {
         return new WrapQuaternion((float) qx, (float)qy, (float)qz, (float)qw);
     }
 
-    private Vec3 AstrobeeLaserNormalVec(){
-        Vec3 nav = getNavCamVec();
-        Vec3 haz = getHazCamVec();
-        Vec3 laser = getLaserVec();
+    private Vec3 AstrobeeLaserNormalVec(Vec3 vpos, WrapQuaternion qpos){
+        Vec3 nav = getNavCamVec(vpos, qpos);
+        Vec3 haz = getHazCamVec(vpos, qpos);
+        Vec3 laser = getLaserVec(vpos, qpos);
 
         Vec3 s1 = nav.sub(laser);
         Vec3 s2 = haz.sub(laser);
@@ -1257,28 +1297,22 @@ public class MainService extends KiboRpcService {
         return s1.cross(s2);
     }
 
-    private Vec3 getNavCamVec(){
+    private Vec3 getNavCamVec(Vec3 vpos, WrapQuaternion qpos){
         Vec3 v = new Vec3(NavCamvec[0], NavCamvec[1], NavCamvec[2]);
-        Vec3 vpos = Vec3PositionNow();
-        WrapQuaternion qpos = QuaPositionNow();
         Vec3 nv = WrapQuaternion.vec3mul(qpos, v);
 
         return vpos.add(nv);
     }
 
-    private Vec3 getHazCamVec(){
+    private Vec3 getHazCamVec(Vec3 vpos, WrapQuaternion qpos){
         Vec3 v = new Vec3(HazCamvec[0], HazCamvec[1], HazCamvec[2]);
-        Vec3 vpos = Vec3PositionNow();
-        WrapQuaternion qpos = QuaPositionNow();
         Vec3 nv = WrapQuaternion.vec3mul(qpos, v);
 
         return vpos.add(nv);
     }
 
-    private Vec3 getLaserVec(){
+    private Vec3 getLaserVec(Vec3 vpos, WrapQuaternion qpos){
         Vec3 v = new Vec3(Laservec[0], Laservec[1], Laservec[2]);
-        Vec3 vpos = Vec3PositionNow();
-        WrapQuaternion qpos = QuaPositionNow();
         Vec3 nv = WrapQuaternion.vec3mul(qpos, v);
 
         return vpos.add(nv);

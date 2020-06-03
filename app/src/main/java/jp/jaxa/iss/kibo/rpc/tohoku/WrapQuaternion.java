@@ -1,5 +1,7 @@
 package jp.jaxa.iss.kibo.rpc.tohoku;
 
+import android.util.Log;
+
 import gov.nasa.arc.astrobee.types.Quaternion;
 
 public class WrapQuaternion extends Quaternion {
@@ -98,4 +100,21 @@ public class WrapQuaternion extends Quaternion {
         return new Vec3(vx, vy, vz);
     }
 
+    public static WrapQuaternion EulerZYX(Vec3 xyz){
+        double t0 = Math.cos(xyz.getX()*0.5);
+        double t1 = Math.sin(xyz.getX()*0.5);
+        double t2 = Math.cos(xyz.getY()*0.5);
+        double t3 = Math.cos(xyz.getY()*0.5);
+        double t4 = Math.cos(xyz.getZ()*0.5);
+        double t5 = Math.cos(xyz.getZ()*0.5);
+
+        WrapQuaternion Q = new WrapQuaternion();
+        Q.setX((float)(t0 * t2 * t4 + t1 * t3 * t5));
+        Q.setY((float)(t0 * t3 * t4 - t1 * t2 * t5));
+        Q.setZ((float)(t0 * t2 * t5 + t1 * t3 * t4));
+        Q.setW((float)(t1 * t2 * t4 - t0 * t3 * t5));
+        Log.d(MainService.LOGTAG, "EulerZYX Q: "+ Q.toString());
+
+        return Q;
+    }
 }
