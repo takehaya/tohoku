@@ -350,9 +350,9 @@ public class MainService extends KiboRpcService {
 
         if (arv != 0){
             api.judgeSendDiscoveredAR(Integer.toString(arv));
-//            double xzsize = arucoToTargetDist/Math.sqrt(2);
-//            Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)-NavLaserGap[0],0,0+(xzsize+ar_z)-NavLaserGap[2]);
-//            moveTo(calmovetopoint, yminqua);
+            double xzsize = arucoToTargetDist/Math.sqrt(2);
+            Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)-NavLaserGap[0],0,0+(xzsize+ar_z)-NavLaserGap[2]);
+            moveTo(calmovetopoint, yminqua);
 
             // TODO:: new impl laser shoutting
             // get my pos
