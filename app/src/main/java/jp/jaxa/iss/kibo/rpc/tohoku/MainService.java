@@ -133,7 +133,7 @@ public class MainService extends KiboRpcService {
         Result.Status result = null;
         boolean isGetResult=false;
 
-        double distance = 0.09;
+        double distance = 0.12;
         double inc = 0.00;
         Vec3 road1_1_v = new Vec3(11.15, -4.8, 4.55);
         Vec3 target1_1_v = new Vec3(11.5 - distance, -5.7, 4.5);
@@ -281,12 +281,14 @@ public class MainService extends KiboRpcService {
         Log.d(LOGTAG, "p2_3 = " + p2_3);
 
         double pw3 = Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3));
-        Result.Status q3status =moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
+        //Result.Status q3status =moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
+        Result.Status q3status =moveTo(px3,py3,pz3,0, 0, 0.707f, -0.707f);
         WrapQuaternion p3q=new WrapQuaternion((float)qx3,(float)qy3,(float)qz3,(float)pw3);
-        Vec3 p3v=WrapQuaternion.vec3mul(p3q,new Vec3(1,0,0));
-        double ARy=-10-py3;
-        Vec3 tv= new Vec3(px3,py3,pz3).add(p3v.mul( p3v.getY()/ARy));
+        Vec3 p3v=WrapQuaternion.vec3mul(p3q,new Vec3(1,0,0)).normalization();
+        double ARy=-9.9-py3;
+        Vec3 tv= new Vec3(px3,py3,pz3).add(p3v.mul( ARy/p3v.getY()));
         //moveTo(tv.getX(),py3,tv.getZ(),0, 0, 0.707f, -0.707f);
+        Log.d(LOGTAG, "p3v"+p3v.toString()+",ARy"+ARy+"tv"+tv.toString());
 
 
         if (q3status != Result.Status.OK){
