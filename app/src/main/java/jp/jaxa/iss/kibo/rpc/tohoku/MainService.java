@@ -352,24 +352,26 @@ public class MainService extends KiboRpcService {
             api.judgeSendDiscoveredAR(Integer.toString(arv));
 //            double xzsize = arucoToTargetDist/Math.sqrt(2);
 //            Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)-NavLaserGap[0],0,0+(xzsize+ar_z)-NavLaserGap[2]);
+//            moveTo(calmovetopoint, yminqua);
 
+            // TODO:: new impl laser shoutting
             // get my pos
-            Vec3 robotpos = Vec3PositionNow();
-            WrapQuaternion robotqt = QuaPositionNow();
-            Vec3 laserpos = getLaserVec(robotpos, robotqt);
-            Vec3 camerapos = getNavCamVec(robotpos, robotqt);
-            Log.d(LOGTAG, "laserpos readAR "+laserpos.toString());
-            Log.d(LOGTAG, "camerapos readAR: "+camerapos.toString());
-
-            // get target pos
-            Vec3 targetpos = targetVec(new Vec3(ar_x, -ar_y, ar_z), camerapos);
-            Log.d(LOGTAG, "targetpos readAR: "+targetpos.toString());
+//            Vec3 robotpos = Vec3PositionNow();
+//            WrapQuaternion robotqt = QuaPositionNow();
+//            Vec3 laserpos = getLaserVec(robotpos, robotqt);
+//            Vec3 camerapos = getNavCamVec(robotpos, robotqt);
+//            Log.d(LOGTAG, "laserpos readAR "+laserpos.toString());
+//            Log.d(LOGTAG, "camerapos readAR: "+camerapos.toString());
+//
+//            // get target pos
+//            Vec3 targetpos = targetVec(new Vec3(ar_x, -ar_y, ar_z), camerapos);
+//            Log.d(LOGTAG, "targetpos readAR: "+targetpos.toString());
 
             // get angle
-            WrapQuaternion ar_q = getTargetRotationAngle(targetpos, laserpos, robotpos);
+//            WrapQuaternion ar_q = getTargetRotationAngle(targetpos, laserpos, robotpos);
 
 //            relativeMoveTo(new Vec3(0,0,0), ar_q);
-            moveTo(robotpos, ar_q);
+//            moveTo(robotpos, ar_q);
 
             Log.d(LOGTAG,"DO LASERCTL!");
             api.laserControl(true);
@@ -1102,12 +1104,6 @@ public class MainService extends KiboRpcService {
 
         return WrapQuaternion.EulerZYX(theta);
     }
-//
-//    private Vec3 laserToTargetVec(Vec3 arvec, Vec3){
-//        Vec3 laser = getLaserVec();
-//        Vec3 target = targetVec(arvec, center);
-//        return target.sub(laser);
-//    }
 
     private Vec3 targetVec(Vec3 arvec, Vec3 center){
         double xzsize = arucoToTargetDist/Math.sqrt(2);
