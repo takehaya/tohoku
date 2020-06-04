@@ -258,8 +258,7 @@ public class MainService extends KiboRpcService {
         WrapQuaternion yminqua = new WrapQuaternion(0, 0, 0.707f, -0.707f);
 
         double pw3 = Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3));
-        //Result.Status q3status =moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
-        Result.Status q3status =moveTo(px3,py3,pz3,0, 0, 0.707f, -0.707f);
+//        Result.Status q3status =moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
         WrapQuaternion p3q=new WrapQuaternion((float)qx3,(float)qy3,(float)qz3,(float)pw3);
         Vec3 p3v=WrapQuaternion.vec3mul(p3q,new Vec3(1,0,0)).normalization();
         double ARy=-9.9-py3;
@@ -268,11 +267,11 @@ public class MainService extends KiboRpcService {
         Log.d(LOGTAG, "p3v"+p3v.toString()+",ARy"+ARy+"tv"+tv.toString());
 
 
-        if (q3status == null ||q3status != Result.Status.OK){
-            Log.d(LOGTAG,"q3status != Result.Status.OK True");
-            moveTo(new Vec3(11.45,-8.41,5.43), yminqua);
+//        if (q3status == null ||q3status != Result.Status.OK){
+//            Log.d(LOGTAG,"q3status != Result.Status.OK True");
+            moveTo(new Vec3(10.65,  -8.3, 5.2), yminqua);
             moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
-        }
+//        }
 
         Mat ids = new Mat();
 
