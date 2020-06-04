@@ -23,7 +23,6 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.QRCodeDetector;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -350,27 +349,29 @@ public class MainService extends KiboRpcService {
 
         if (arv != 0){
             api.judgeSendDiscoveredAR(Integer.toString(arv));
+            relativeMoveTo(new Vec3(0,0,0), yminqua);
             double xzsize = arucoToTargetDist/Math.sqrt(2);
             Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)-NavLaserGap[0],0,0+(xzsize+ar_z)-NavLaserGap[2]);
             moveTo(calmovetopoint, yminqua);
 
             // TODO:: new impl laser shoutting
             // get my pos
-//            Vec3 robotpos = Vec3PositionNow();
-//            WrapQuaternion robotqt = QuaPositionNow();
-//            Vec3 laserpos = getLaserVec(robotpos, robotqt);
-//            Vec3 camerapos = getNavCamVec(robotpos, robotqt);
-//            Log.d(LOGTAG, "laserpos readAR "+laserpos.toString());
-//            Log.d(LOGTAG, "camerapos readAR: "+camerapos.toString());
-//
-//            // get target pos
-//            Vec3 targetpos = targetVec(new Vec3(ar_x, -ar_y, ar_z), camerapos);
-//            Log.d(LOGTAG, "targetpos readAR: "+targetpos.toString());
+            Vec3 robotpos = Vec3PositionNow();
+            WrapQuaternion robotqt = QuaPositionNow();
+            Vec3 laserpos = getLaserVec(robotpos, robotqt);
+            Vec3 camerapos = getNavCamVec(robotpos, robotqt);
+            Log.d(LOGTAG, "laserpos readAR "+laserpos.toString());
+            Log.d(LOGTAG, "camerapos readAR: "+camerapos.toString());
 
-            // get angle
-//            WrapQuaternion ar_q = getTargetRotationAngle(targetpos, laserpos, robotpos);
+            // get target pos
+            Vec3 targetpos = targetVec(new Vec3(ar_x, -ar_y, ar_z), camerapos);
+            Log.d(LOGTAG, "targetpos readAR: "+targetpos.toString());
 
-//            relativeMoveTo(new Vec3(0,0,0), ar_q);
+//             get angle
+            WrapQuaternion ar_q = getTargetRotationMinetaAngle(targetpos, laserpos, robotpos);
+
+
+            relativeMoveTo(new Vec3(0,0,0), ar_q);
 //            moveTo(robotpos, ar_q);
 
             Log.d(LOGTAG,"DO LASERCTL!");
@@ -752,8 +753,8 @@ public class MainService extends KiboRpcService {
 //                    continue;
 //                }
 
-                writemat = sharpenFilter(writemat);
-                ImageWrite(writemat, key+"-sharpenFilter");
+//                writemat = sharpenFilter(writemat);
+//                ImageWrite(writemat, key+"-sharpenFilter");
                 try {
                     result = zxingDetectDecodeQrcode(writemat);
                     if (!result.equals("error") && 0 < result.length()){
@@ -961,125 +962,49 @@ public class MainService extends KiboRpcService {
     }
     //-----------------AR processing----------------------
 
-    private List<Mat> ARRectTrimPoint(Mat nmat){
-        Log.d(LOGTAG,"ARRectTrimPoint try");
+    private WrapQuaternion getTargetRotationMinetaAngle(Vec3 target, Vec3 laser, Vec3 center){
+        Log.d(LOGTAG, "getTargetRotationMinetaAngle start!");
 
-        Mat fmap = nmat.clone();
-        Core.bitwise_not(fmap, fmap);
-        ImageWrite(fmap, "bitwise_not");
+        double X = target.getX()- center.getX();
+        double Y = center.getY()- target.getY();
+        double XY = Math.sqrt(X*X + Y*Y);
 
-        Imgproc.threshold(fmap, fmap, 240, 255, Imgproc.THRESH_BINARY_INV);
-        ImageWrite(fmap, "threshold1");
+        double ztheta = 0;
+        double theta11 = Math.toDegrees(Math.atan(X/Y));
+        double theta12 = 0;
 
-        Imgproc.threshold(fmap, fmap, 0, 255, Imgproc.THRESH_BINARY_INV | Imgproc.THRESH_OTSU);
-        ImageWrite(fmap, "threshold2");
-
-        Mat hierarchy = Mat.zeros(new Size(5,5), CvType.CV_8UC1);
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Imgproc.findContours(fmap, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
-        Log.d(LOGTAG,"ARRectTrimPoint contours.size: " + contours.size());
-
-        List<Mat> retcontour = new ArrayList<Mat>();
-
-        if (contours.size() <= 0){
-            return null;
+        if (laser.getX() < center.getX()){
+            theta12 =  Math.toDegrees(Math.asin((center.getX() - laser.getX())/XY));
+            ztheta = theta11 - theta12;
+        }else if (laser.getX() > center.getX()){
+            theta12 =  Math.toDegrees(Math.asin((laser.getX() - center.getX())/XY));
+            ztheta = theta11 + theta12;
+        }else{
+            ztheta = theta11;
         }
 
-        for(int i = 0; i<contours.size(); i++){
-            MatOfPoint ptmat = contours.get(i);
-            double size = Imgproc.contourArea(ptmat);
+        double Z = center.getZ() - target.getZ();
+        double YZ = Math.sqrt(Y*Y + Z*Z);
 
-            if (!(300 < size &&size < 10000)) {
-                /* Ignore areas that are small in size. */
-                continue;
-            }
+        double xtheta = 0;
+        double theta21 =  Math.toDegrees(Math.atan(Y/Z));
+        double theta22 = 0;
 
-            MatOfPoint2f contours2f = new MatOfPoint2f(ptmat.toArray());
-            MatOfPoint2f approx2f = new MatOfPoint2f();
-            double ep = Imgproc.arcLength(contours2f, true);
-            Imgproc.approxPolyDP(contours2f, approx2f, ep * 0.05, true);
-
-            // Obtaining a convex hull
-            MatOfPoint approx = new MatOfPoint(approx2f.toArray());
-            MatOfInt hull = new MatOfInt();
-            Imgproc.convexHull(approx, hull);
-
-
-            if(hull.size().height == 4){
-                Mat srcPointMat = new Mat(4,2,CvType.CV_32F);
-
-                double[] md = approx.get((int)hull.get(1,0)[0], 0);
-                srcPointMat.put(1, 0, new float[]{(float)md[0], (float)md[1]});
-
-                md = approx.get((int)hull.get(2,0)[0], 0);
-                srcPointMat.put(2, 0, new float[]{(float)md[0], (float)md[1]});
-
-                md = approx.get((int)hull.get(3,0)[0], 0);
-                srcPointMat.put(3, 0, new float[]{(float)md[0], (float)md[1]});
-
-                md = approx.get((int)hull.get(0,0)[0], 0);
-                srcPointMat.put(0, 0, new float[]{(float)md[0], (float)md[1]});
-                retcontour.add(srcPointMat);
-            }
-        }
-        return retcontour;
-    }
-
-    private int detectARmarker(Mat nmat, String key) {
-        Log.d(LOGTAG,"start detectARmarker");
-        if(nmat == null || nmat.empty()){
-            Log.d(LOGTAG,"nmat == null");
-            return FAIL_AR_DECODE;
+        if (laser.getZ() < center.getZ()){
+            theta22 =  Math.toDegrees(Math.asin((center.getZ() - laser.getZ())/YZ));
+            xtheta = theta21 - theta22;
+        }else if (laser.getX() > center.getX()){
+            theta22 =  Math.toDegrees(Math.asin((laser.getZ() - center.getZ())/YZ));
+            xtheta = theta21 + theta22;
+        }else{
+            xtheta = theta21;
         }
 
-        ImageWrite(nmat, key);
+        Vec3 theta = new Vec3(xtheta, 0, ztheta-90);
+        Log.d(LOGTAG, "getTargetRotationAngle theta: "+ theta.toString());
 
-        List<Mat> points = ARRectTrimPoint(nmat);
-        int result = FAIL_AR_DECODE;
-        if(points != null){
-            Log.d(LOGTAG,"detectARmarker : points.size(): " + points.size());
-            for(int i=0; i< points.size(); i++){
-                Mat writemat = pointCuting(nmat, points.get(i));
-                ImageWrite(writemat, key+"-pointCuting");
-//                writemat = sharpenFilter(writemat);
-                ImageWrite(writemat, key+"-sharpenFilter");
-                try {
-                    result = arucoDetectDecodeArmarker(writemat);
-                    if (result!=FAIL_AR_DECODE){
-                        return result;
-                    }
-                }catch (Exception e){
-                    Log.d(LOGTAG, "ar rect base cutimage & decode/exception detectARmarker: "+ e.getLocalizedMessage());
-                }
-            }
-        }
-        Log.d(LOGTAG,"detectARmarker not working all pattern:(");
 
-        return FAIL_AR_DECODE;
-    }
-
-    private int arucoDetectDecodeArmarker(Mat nmat){
-        Log.d(LOGTAG,"arucoDetectDecodeArmarker start");
-
-        if(nmat == null){
-            Log.d(LOGTAG,"nmat == null");
-            return FAIL_AR_DECODE;
-        }
-        final Dictionary dictionary = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
-        List<Mat> corners = new ArrayList<>();
-        Mat ids = new Mat();
-        Log.d(LOGTAG,"arucoDetectDecodeArmarker Aruco.detectMarkers start");
-        Aruco.detectMarkers(nmat, dictionary, corners, ids);
-        Log.d(LOGTAG,"arucoDetectDecodeArmarker Aruco.detectMarkers end");
-
-        if (0 < corners.size()) {
-            Log.d(LOGTAG, "Try Read AR! detected!");
-            int arv = (int) ids.get(0, 0)[0];
-            Log.d(LOGTAG, "Try Read AR! arv: " + arv);
-
-            return arv;
-        }
-        return FAIL_AR_DECODE;
+        return WrapQuaternion.EulerZYX(theta);
     }
 
     private WrapQuaternion getTargetRotationAngle(Vec3 target, Vec3 laser, Vec3 center){
