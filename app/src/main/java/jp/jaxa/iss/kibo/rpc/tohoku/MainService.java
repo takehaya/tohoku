@@ -27,7 +27,6 @@ import org.opencv.imgproc.Imgproc;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,35 +43,9 @@ import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
 
 
 public class MainService extends KiboRpcService {
-    private List<KiboQRField> QRTable = new ArrayList<KiboQRField>(Arrays.asList(
-            new KiboQRField("1-1", 11.5, -5.7, 4.5, 0, 0, 0, 1, QRInfoType.PosX),
-            new KiboQRField("1-2", 11, -6, 5.55, 0, -0.7071068, 0, 0.7071068, QRInfoType.PosY),
-            new KiboQRField("1-3", 11, -5.5, 4.33, 0, 0.7071068, 0, 0.7071068, QRInfoType.PosZ),
-            new KiboQRField("2-1", 10.30, -7.5, 4.7, 0, 0, 1, 0, QRInfoType.QuaX),
-            new KiboQRField("2-2", 11.5, -8, 5, 0, 0, 0, 1, QRInfoType.QuaY),
-            new KiboQRField("2-3", 11, -7.7, 5.55, 0, -0.7071068, 0, 0.7071068, QRInfoType.QuaZ)
-    ));
-
-    private List<KeepZone> KZTable = new ArrayList<KeepZone>(Arrays.asList(
-            new KeepZone(10.75, -4.9, 4.8, 10.95, -4.7, 5.0, false),
-            new KeepZone(10.75, -6.5, 3.9, 11.95, -6.4, 5.9, false),
-            new KeepZone(9.95, -7.2, 3.9, 10.85, -7.1, 5.9, false),
-            new KeepZone(10.10, -8.6, 5.4, 11.1, -8.3, 5.9, false),
-            new KeepZone(11.45, -9.0, 4.1, 11.95, -8.5, 5.1, false),
-            new KeepZone(9.95, -9.1, 4.6, 10.45, -8.5, 5.1, false),
-            new KeepZone(10.95, -8.4, 4.9, 11.15, -8.2, 5.1, false),
-            new KeepZone(11.05, -8.9, 4.2, 11.25, -8.7, 4.4, false),
-            new KeepZone(10.45, -9.1, 4.6, 10.65, -8.9, 4.8, false),
-            new KeepZone(10.25, -9.75, 4.2, 11.65, -3, 5.6, true)
-    ));
-
     public static final Boolean DOJAXA = true;
     public static final String LOGTAG = "TohokuKibo";
     public static final String EPOCK_UNIQUE_STR = UUID.randomUUID().toString().substring(4);
-
-    private static final int FAIL_AR_DECODE = -10000;
-
-    private AstrobeeField AstrobeeNode = new AstrobeeField(10.95, -3.75, 4.85, 0, 0, 0.707, -0.707);
 
     private Mat cameraMatrix;
     private Mat distorsionMatrix;
@@ -82,8 +55,6 @@ public class MainService extends KiboRpcService {
     private final float[] NavCamvec = new float[]{-0.0422f, -0.117f, -0.0826f};//xyz
     private final float[] HazCamvec = new float[]{0.0352f, -0.1328f, -0.0826f};
     private final float[] Laservec = new float[]{0.0572f, -0.1302f, -0.1111f};
-
-    private final float[] NavLaserGap = new float[]{0.0994f, 0.0132f, 0.0285f};//abs(nav->laser)
 
     private void cameraMatInit(){
         cameraMatrix = new Mat(3,3,CvType.CV_32FC1);
@@ -129,9 +100,9 @@ public class MainService extends KiboRpcService {
 
         double px3 = 0,py3 = 0,pz3=0,qx3 = 0,qy3=0,qz3=0;
         int arv = 0;
-        final int LOOPSIZE = 5;
-        Result.Status result = null;
-        boolean isGetResult=false;
+        final int LOOPSIZE = 10;
+        Vec3 robotpos = new Vec3();
+        WrapQuaternion robotqt = new WrapQuaternion();
 
         double distance = 0.12;
         double inc = 0.00;
@@ -169,9 +140,13 @@ public class MainService extends KiboRpcService {
             pz3 = Double.parseDouble(p1_3_con[1]);
         }
         while (!p1_3_con[0].equals("pos_z") && loopCounter < LOOPSIZE){
-            if(moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q)!=Result.Status.OK)
-                if(relativeMoveTo(0,0,-0.15,0,0,0,1)!=Result.Status.OK)
-                    if(moveTo(10.95, -3.95, 4.65,0,0,0,1)!=Result.Status.OK);
+            Result.Status res = moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q);
+            if(res == null || res!=Result.Status.OK){
+                res = relativeMoveTo(0,0,-0.15,0,0,0,1);
+                if(res == null || res!=Result.Status.OK){
+                    res = moveTo(10.95, -3.95, 4.65,0,0,0,1);
+                }
+            }
 
             p1_3 = scanOnecBarcode(QRInfoType.PosZ);
             if (!p1_3.equals("error")) {
@@ -280,6 +255,8 @@ public class MainService extends KiboRpcService {
         loopCounter = 0;
         Log.d(LOGTAG, "p2_3 = " + p2_3);
 
+        WrapQuaternion yminqua = new WrapQuaternion(0, 0, 0.707f, -0.707f);
+
         double pw3 = Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3));
         //Result.Status q3status =moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
         Result.Status q3status =moveTo(px3,py3,pz3,0, 0, 0.707f, -0.707f);
@@ -291,21 +268,16 @@ public class MainService extends KiboRpcService {
         Log.d(LOGTAG, "p3v"+p3v.toString()+",ARy"+ARy+"tv"+tv.toString());
 
 
-        if (q3status != Result.Status.OK){
+        if (q3status == null ||q3status != Result.Status.OK){
             Log.d(LOGTAG,"q3status != Result.Status.OK True");
-            moveTo(11, py3, 4.7, qx3,qy3,qz3,pw3);
+            moveTo(new Vec3(11.45,-8.41,5.43), yminqua);
             moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
         }
-
-
-        WrapQuaternion yminqua = new WrapQuaternion(0, 0, 0.707f, -0.707f);
-//        relativeMoveTo(new Vec3(0,0,0.1),yminqua);
 
         Mat ids = new Mat();
 
         double ar_roll_angle=0, ar_pitch_angle=0, ar_yaw_angle=0, ar_x=0, ar_y=0, ar_z=0;
-        Vec3 robotpos = new Vec3();
-        WrapQuaternion robotqt = new WrapQuaternion();
+
         Vec3 camerapos = new Vec3();
 
         // get target pos
@@ -463,6 +435,10 @@ public class MainService extends KiboRpcService {
         double x =  api.getTrustedRobotKinematics().getPosition().getX();
         double y =  api.getTrustedRobotKinematics().getPosition().getY();
         double z =  api.getTrustedRobotKinematics().getPosition().getZ();
+        double qx =  api.getTrustedRobotKinematics().getOrientation().getX();
+        double qy =  api.getTrustedRobotKinematics().getOrientation().getY();
+        double qz =  api.getTrustedRobotKinematics().getOrientation().getZ();
+        double qw =  api.getTrustedRobotKinematics().getOrientation().getZ();
 
         Log.d(LOGTAG,"Keep In Zone");
         if (x < kiz_x[0]){
@@ -487,7 +463,7 @@ public class MainService extends KiboRpcService {
         Log.i(LOGTAG, "keepInZone fixer yy:" + yy);
         Log.i(LOGTAG, "keepInZone fixer zz:" + zz);
         if (xx !=0 || yy != 0|| zz!=0){
-            return relativeMoveTo(new Vec3(xx, yy, zz), new WrapQuaternion(0,0,0,0));
+            return relativeMoveTo(new Vec3(xx, yy, zz), new WrapQuaternion((float) qx,(float) qy,(float)qz,(float)qw));
         }
         return null;
     }
@@ -1112,7 +1088,7 @@ public class MainService extends KiboRpcService {
             printPosition("moveToRun", point, quaternion);
             ++loopCounter;
         }
-        if(result.getStatus() == Result.Status.EXEC_FAILED){
+        if(result.getStatus() == null ||result.getStatus() == Result.Status.EXEC_FAILED){
             keepInZone();
         }
         return result.getStatus();
