@@ -290,6 +290,13 @@ public class MainService extends KiboRpcService {
         Mat ids = new Mat();
 
         double ar_roll_angle=0, ar_pitch_angle=0, ar_yaw_angle=0, ar_x=0, ar_y=0, ar_z=0;
+        Vec3 robotpos = new Vec3();
+        WrapQuaternion robotqt = new WrapQuaternion();
+        Vec3 camerapos = new Vec3();
+
+        // get target pos
+        Vec3 targetpos = new Vec3();
+
         while (arv == 0 && loopCounter < LOOPSIZE) {
             try {
                 Log.d(LOGTAG,"Try Read AR! Start");
@@ -319,6 +326,15 @@ public class MainService extends KiboRpcService {
                     ar_x = translationVectors.get(0,0)[0];
                     ar_y = translationVectors.get(0, 0)[2];
                     ar_z = translationVectors.get(0, 0)[1];
+
+                    // get target pos
+                    robotpos = Vec3PositionNow();
+                    robotqt = QuaPositionNow();
+                    camerapos = getNavCamVec(robotpos, robotqt);
+                    targetpos = targetVec(new Vec3(ar_x, -ar_y, ar_z), camerapos);
+
+                    Log.d(LOGTAG, "targetpos readAR: "+targetpos.toString());
+                    Log.d(LOGTAG, "camerapos readAR: "+camerapos.toString());
 
                     Log.d(LOGTAG,"Try Read AR! rotationMatrix: "+rotationMatrix.dump());
                     ar_roll_angle = rotationMatrix.get(0, 0)[0];//roll
@@ -350,26 +366,19 @@ public class MainService extends KiboRpcService {
         if (arv != 0){
             api.judgeSendDiscoveredAR(Integer.toString(arv));
             relativeMoveTo(new Vec3(0,0,0), yminqua);
-            double xzsize = arucoToTargetDist/Math.sqrt(2);
-            Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)-NavLaserGap[0],0,0+(xzsize+ar_z)-NavLaserGap[2]);
-            moveTo(calmovetopoint, yminqua);
+//            double xzsize = arucoToTargetDist/Math.sqrt(2);
+//            Vec3 calmovetopoint = new Vec3(0+(xzsize+ar_x)-NavLaserGap[0],0,0+(xzsize+ar_z)-NavLaserGap[2]);
+//            moveTo(calmovetopoint, yminqua);
 
             // TODO:: new impl laser shoutting
             // get my pos
-            Vec3 robotpos = Vec3PositionNow();
-            WrapQuaternion robotqt = QuaPositionNow();
+            robotpos = Vec3PositionNow();
+            robotqt = QuaPositionNow();
             Vec3 laserpos = getLaserVec(robotpos, robotqt);
-            Vec3 camerapos = getNavCamVec(robotpos, robotqt);
             Log.d(LOGTAG, "laserpos readAR "+laserpos.toString());
-            Log.d(LOGTAG, "camerapos readAR: "+camerapos.toString());
-
-            // get target pos
-            Vec3 targetpos = targetVec(new Vec3(ar_x, -ar_y, ar_z), camerapos);
-            Log.d(LOGTAG, "targetpos readAR: "+targetpos.toString());
 
 //             get angle
             WrapQuaternion ar_q = getTargetRotationMinetaAngle(targetpos, laserpos, robotpos);
-
 
             relativeMoveTo(new Vec3(0,0,0), ar_q);
 //            moveTo(robotpos, ar_q);
@@ -975,10 +984,10 @@ public class MainService extends KiboRpcService {
 
         if (laser.getX() < center.getX()){
             theta12 =  Math.toDegrees(Math.asin((center.getX() - laser.getX())/XY));
-            ztheta = theta11 - theta12;
+            ztheta = theta11 + theta12;
         }else if (laser.getX() > center.getX()){
             theta12 =  Math.toDegrees(Math.asin((laser.getX() - center.getX())/XY));
-            ztheta = theta11 + theta12;
+            ztheta = theta11 - theta12;
         }else{
             ztheta = theta11;
         }
@@ -987,7 +996,7 @@ public class MainService extends KiboRpcService {
         double YZ = Math.sqrt(Y*Y + Z*Z);
 
         double xtheta = 0;
-        double theta21 =  Math.toDegrees(Math.atan(Y/Z));
+        double theta21 =  Math.toDegrees(Math.atan(Z/Y));
         double theta22 = 0;
 
         if (laser.getZ() < center.getZ()){
