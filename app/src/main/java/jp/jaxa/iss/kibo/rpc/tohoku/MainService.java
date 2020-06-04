@@ -316,7 +316,7 @@ public class MainService extends KiboRpcService {
                     robotpos = Vec3PositionNow();
                     robotqt = QuaPositionNow();
                     camerapos = getNavCamVec(robotpos, robotqt);
-                    targetpos = targetVec(new Vec3(ar_x, -ar_y, ar_z), camerapos);
+                    targetpos = targetVec(new Vec3(ar_x, -ar_y, -ar_z), camerapos);
 
                     Log.d(LOGTAG, "targetpos readAR: "+targetpos.toString());
                     Log.d(LOGTAG, "camerapos readAR: "+camerapos.toString());
@@ -999,7 +999,7 @@ public class MainService extends KiboRpcService {
         }
 
         Vec3 theta = new Vec3(xtheta, 0, ztheta-90);
-        Log.d(LOGTAG, "getTargetRotationAngle theta: "+ theta.toString());
+        Log.d(LOGTAG, "getTargetRotationMinetaAngle theta: "+ theta.toString());
 
 
         return WrapQuaternion.EulerZYX(theta);
@@ -1031,7 +1031,7 @@ public class MainService extends KiboRpcService {
     private Vec3 targetVec(Vec3 arvec, Vec3 center){
         double xzsize = arucoToTargetDist/Math.sqrt(2);
 
-        return arvec.add(new Vec3(xzsize, 0, xzsize)).add(center);
+        return arvec.add(new Vec3(xzsize, 0, -xzsize)).add(center);
     }
     //-----------------basic action functions----------------------
 
