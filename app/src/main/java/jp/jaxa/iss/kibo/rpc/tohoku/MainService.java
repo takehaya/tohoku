@@ -263,7 +263,7 @@ public class MainService extends KiboRpcService {
         WrapQuaternion p3q=new WrapQuaternion((float)qx3,(float)qy3,(float)qz3,(float)pw3);
         Vec3 p3v=WrapQuaternion.vec3mul(p3q,new Vec3(1,0,0)).normalization();
         double ARy=-9.9-py3;
-        Vec3 tv= new Vec3(px3,py3,pz3).add(p3v.mul( ARy/p3v.getY()));
+        Vec3 tv= new Vec3(px3,py3,pz3).add(p3v.mul(- ARy/p3v.getY()));
         //moveTo(tv.getX(),py3,tv.getZ(),0, 0, 0.707f, -0.707f);
         Log.d(LOGTAG, "p3v"+p3v.toString()+",ARy"+ARy+"tv"+tv.toString());
 
@@ -1078,20 +1078,28 @@ public class MainService extends KiboRpcService {
         final Quaternion quaternion = new Quaternion(qua_x, qua_y, qua_z, qua_w);
 
         Result result = this.api.moveTo(point, quaternion, true);
-        int loopCounter = 0;
-        Log.i(MainService.LOGTAG, "MoveTo Result: " + result.getStatus().toString());
-        printPosition("moveToRun", point, quaternion);
+        if(result==null||!result.hasSucceeded()){
 
-        while (!result.hasSucceeded() && loopCounter < LOOP_MAX) {
-            result = this.api.moveTo(point, quaternion, true);
+            int loopCounter = 0;
+            do {
+                result = this.api.moveTo(point, quaternion, true);
+                if(result==null)continue;
+                Log.i(MainService.LOGTAG, "MoveTo Result: " + result.getStatus().toString());
+                printPosition("moveToRun", point, quaternion);
+                ++loopCounter;
+            }while ((result==null||!result.hasSucceeded()) && loopCounter < LOOP_MAX);
+            if(result.getStatus() == null ||result.getStatus() == Result.Status.EXEC_FAILED){
+                keepInZone();
+            }
+        }
+
+        if(result!=null) {
             Log.i(MainService.LOGTAG, "MoveTo Result: " + result.getStatus().toString());
             printPosition("moveToRun", point, quaternion);
-            ++loopCounter;
+            return result.getStatus();
         }
-        if(result.getStatus() == null ||result.getStatus() == Result.Status.EXEC_FAILED){
-            keepInZone();
-        }
-        return result.getStatus();
+        return null;
+
     }
 
     public Result.Status relativeMoveTo(Vec3 vec, WrapQuaternion quat) {
