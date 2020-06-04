@@ -130,6 +130,8 @@ public class MainService extends KiboRpcService {
         double px3 = 0,py3 = 0,pz3=0,qx3 = 0,qy3=0,qz3=0;
         int arv = 0;
         final int LOOPSIZE = 5;
+        Result.Status result = null;
+        boolean isGetResult=false;
 
         double distance = 0.12;
         double inc = 0.00;
@@ -157,7 +159,7 @@ public class MainService extends KiboRpcService {
 //        WrapQuaternion target2_3_q = new WrapQuaternion(0, -0.707f, 0, 0.707f);
         WrapQuaternion target2_3_q = new WrapQuaternion(0.707f, 0, 0.707f, 0);
 
-        moveTo(road1_1_v, road1_1_q);
+        //moveTo(road1_1_v, road1_1_q);
         int loopCounter = 0;
 
         String p1_3 = "";
@@ -167,7 +169,10 @@ public class MainService extends KiboRpcService {
             pz3 = Double.parseDouble(p1_3_con[1]);
         }
         while (!p1_3_con[0].equals("pos_z") && loopCounter < LOOPSIZE){
-            moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q);
+            if(moveTo(target1_3_v.add(new Vec3(0, 0, -inc)), target1_3_q)!=Result.Status.OK)
+                if(relativeMoveTo(0,0,-0.15,0,0,0,1)!=Result.Status.OK)
+                    if(moveTo(10.95, -3.95, 4.65,0,0,0,1)!=Result.Status.OK);
+
             p1_3 = scanOnecBarcode(QRInfoType.PosZ);
             if (!p1_3.equals("error")) {
                 p1_3_con = p1_3.split(", ");
@@ -177,6 +182,7 @@ public class MainService extends KiboRpcService {
         }
         loopCounter = 0;
         Log.d(LOGTAG, "p1_3 = " + p1_3);
+
 
 
         String p1_1 = "";
@@ -275,7 +281,15 @@ public class MainService extends KiboRpcService {
         Log.d(LOGTAG, "p2_3 = " + p2_3);
 
         double pw3 = Math.sqrt(1 - (qx3 * qx3) - (qy3 * qy3) - (qz3 * qz3));
-        Result.Status q3status = moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
+        //Result.Status q3status =moveTo(px3,py3,pz3,qx3,qy3,qz3,pw3);
+        Result.Status q3status =moveTo(px3,py3,pz3,0, 0, 0.707f, -0.707f);
+        WrapQuaternion p3q=new WrapQuaternion((float)qx3,(float)qy3,(float)qz3,(float)pw3);
+        Vec3 p3v=WrapQuaternion.vec3mul(p3q,new Vec3(1,0,0)).normalization();
+        double ARy=-9.9-py3;
+        Vec3 tv= new Vec3(px3,py3,pz3).add(p3v.mul( ARy/p3v.getY()));
+        //moveTo(tv.getX(),py3,tv.getZ(),0, 0, 0.707f, -0.707f);
+        Log.d(LOGTAG, "p3v"+p3v.toString()+",ARy"+ARy+"tv"+tv.toString());
+
 
         if (q3status != Result.Status.OK){
             Log.d(LOGTAG,"q3status != Result.Status.OK True");
