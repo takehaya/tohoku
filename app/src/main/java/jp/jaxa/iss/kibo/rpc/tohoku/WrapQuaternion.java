@@ -119,11 +119,39 @@ public class WrapQuaternion extends Quaternion {
         double sr = Math.sin(xh);
 
         WrapQuaternion Q = new WrapQuaternion();
-        Q.setW((float)(cr * cp * cy + sr * sp * sy));
         Q.setX((float)(sr * cp * cy - cr * sp * sy));
         Q.setY((float)(cr * sp * cy + sr * cp * sy));
         Q.setZ((float)(cr * cp * sy - sr * sp * cy));
+        Q.setW((float)(cr * cp * cy + sr * sp * sy));
         Log.d(MainService.LOGTAG, "EulerZYX Q: "+ Q.toString());
+
+        return Q;
+    }
+
+    public static WrapQuaternion EulerYXZ(Vec3 xyz){// yaw (Z), pitch (Y), roll (X)
+        double xh = Math.toRadians(xyz.getX());
+        double yh = Math.toRadians(xyz.getY());
+        double zh = Math.toRadians(xyz.getZ());
+        Log.d(MainService.LOGTAG, "EulerYXZ xh: "+ xh);
+        Log.d(MainService.LOGTAG, "EulerYXZ yh: "+ yh);
+        Log.d(MainService.LOGTAG, "EulerYXZ zh: "+ zh);
+        xh = xh*0.5;
+        yh = yh*0.5;
+        zh = zh*0.5;
+
+        double cy = Math.cos(zh);
+        double sy = Math.sin(zh);
+        double cp = Math.cos(yh);
+        double sp = Math.sin(yh);
+        double cr = Math.cos(xh);
+        double sr = Math.sin(xh);
+
+        WrapQuaternion Q = new WrapQuaternion();
+        Q.setX((float)(cy * sp * sr - sy * sp * cr));
+        Q.setY((float)(cy * sp * cr + sy * cp * sr));
+        Q.setZ((float)(sy * sp * cr - cy * sp * sr));
+        Q.setW((float)(cy * cp * cr + sy * sp * sr));
+        Log.d(MainService.LOGTAG, "EulerYXZ Q: "+ Q.toString());
 
         return Q;
     }

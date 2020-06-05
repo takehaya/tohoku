@@ -1008,7 +1008,7 @@ public class MainService extends KiboRpcService {
             xtheta = theta21;
         }
 
-        Vec3 theta = new Vec3(-xtheta, 0, ztheta-90);
+        Vec3 theta = new Vec3(xtheta, 0, ztheta-90);
         Log.d(LOGTAG, "getTargetRotationMinetaAngle theta: "+ theta.toString());
 
 
