@@ -973,13 +973,17 @@ public class MainService extends KiboRpcService {
         double theta11 = Math.toDegrees(Math.atan(X/Y));
         double theta12 = 0;
 
-        if (laser.getX() < center.getX()){
+        double xdt = Math.abs(center.getX() - laser.getX());
+        if (laser.getX() < center.getX() && 0.01 <= xdt){
+            Log.d(LOGTAG, "getTargetRotationMinetaAngle thetaz1");
             theta12 =  Math.toDegrees(Math.asin((center.getX() - laser.getX())/XY));
             ztheta = theta11 + theta12;
-        }else if (laser.getX() > center.getX()){
+        }else if (laser.getX() > center.getX() && 0.01 <= xdt){
+            Log.d(LOGTAG, "getTargetRotationMinetaAngle thetaz2");
             theta12 =  Math.toDegrees(Math.asin((laser.getX() - center.getX())/XY));
             ztheta = theta11 - theta12;
         }else{
+            Log.d(LOGTAG, "getTargetRotationMinetaAngle thetaz3");
             ztheta = theta11;
         }
 
@@ -987,20 +991,24 @@ public class MainService extends KiboRpcService {
         double YZ = Math.sqrt(Y*Y + Z*Z);
 
         double xtheta = 0;
-        double theta21 =  Math.toDegrees(Math.atan(Z/Y));
+        double theta21 = Math.toDegrees(Math.atan(Z/Y));
         double theta22 = 0;
+        double zdt = Math.abs(center.getZ() - laser.getZ());
 
-        if (laser.getZ() < center.getZ()){
+        if (laser.getZ() < center.getZ() &&  0.01 <= zdt){
+            Log.d(LOGTAG, "getTargetRotationMinetaAngle thetax1");
             theta22 =  Math.toDegrees(Math.asin((center.getZ() - laser.getZ())/YZ));
             xtheta = theta21 - theta22;
-        }else if (laser.getZ() > center.getZ()){
+        }else if (laser.getZ() > center.getZ() && 0.01 <= zdt){
+            Log.d(LOGTAG, "getTargetRotationMinetaAngle thetax2");
             theta22 =  Math.toDegrees(Math.asin((laser.getZ() - center.getZ())/YZ));
             xtheta = theta21 + theta22;
         }else{
+            Log.d(LOGTAG, "getTargetRotationMinetaAngle thetax3");
             xtheta = theta21;
         }
 
-        Vec3 theta = new Vec3(xtheta, 0, ztheta-90);
+        Vec3 theta = new Vec3(-xtheta, 0, ztheta-90);
         Log.d(LOGTAG, "getTargetRotationMinetaAngle theta: "+ theta.toString());
 
 
