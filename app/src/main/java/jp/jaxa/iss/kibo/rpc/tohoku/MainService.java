@@ -52,6 +52,7 @@ public class MainService extends KiboRpcService {
     private final float arucoMarkerLength = 0.05f;//Length of one side
     private final float arucoToTargetDist = 0.2f;// 0.2m
 
+    private final float[] LaserDeg = new float[]{127.54325039f, 129.059289063f, 136.415204525f};//XY, XZ, YZ
     private final float[] NavCamvec = new float[]{-0.0422f, -0.117f, -0.0826f};//xyz
     private final float[] HazCamvec = new float[]{0.0352f, -0.1328f, -0.0826f};
     private final float[] Laservec = new float[]{0.0572f, -0.1302f, -0.1111f};
@@ -364,6 +365,7 @@ public class MainService extends KiboRpcService {
 
 //             get angle
             WrapQuaternion ar_q = getTargetRotationMinetaAngle(targetpos, laserpos, robotpos);
+//            WrapQuaternion ar_q = getTargetRotationAngle(targetpos, laserpos, robotpos);
 
             relativeMoveTo(new Vec3(0,0,0), ar_q);
 //            moveTo(robotpos, ar_q);
@@ -991,7 +993,7 @@ public class MainService extends KiboRpcService {
         if (laser.getZ() < center.getZ()){
             theta22 =  Math.toDegrees(Math.asin((center.getZ() - laser.getZ())/YZ));
             xtheta = theta21 - theta22;
-        }else if (laser.getX() > center.getX()){
+        }else if (laser.getZ() > center.getZ()){
             theta22 =  Math.toDegrees(Math.asin((laser.getZ() - center.getZ())/YZ));
             xtheta = theta21 + theta22;
         }else{
@@ -1014,14 +1016,43 @@ public class MainService extends KiboRpcService {
         Vec3 LTvec = laser.sub(center);
         Log.d(LOGTAG, "getTargetRotationAngle LTvec: "+ LTvec.toString());
 
-        //XY
-        double ztheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getX(),TOvec.getY(),LTvec.getX(),LTvec.getY())));
-        //XZ
-        double ytheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getX(),TOvec.getZ(),LTvec.getX(),LTvec.getZ())));
-        //ZY
-        double xtheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getZ(),TOvec.getY(),LTvec.getZ(),LTvec.getY())));
+        //get norm
+        double TOXYlen = Vec3.norm2(TOvec.getX(), TOvec.getY());
+        double LTXYlen = Vec3.norm2(LTvec.getX(), LTvec.getY());
+        double TOYZlen = Vec3.norm2(TOvec.getY(), TOvec.getZ());
+        double LTYZlen = Vec3.norm2(LTvec.getY(), LTvec.getZ());
+        double TOXZlen = Vec3.norm2(TOvec.getX(), TOvec.getZ());
+        double LTXZlen = Vec3.norm2(LTvec.getX(), LTvec.getZ());
 
-        Vec3 theta = new Vec3(xtheta, ytheta, ztheta);
+        double XYA = TOXYlen/Math.sin(Math.toRadians(LaserDeg[0]));
+        double XYLAngle = Math.asin(LTXYlen/XYA);
+        double XYPAngle = 180 - LaserDeg[0] - Math.toDegrees(XYLAngle);
+
+        double YZA = TOYZlen/Math.sin(Math.toRadians(LaserDeg[2]));
+        double YZLAngle = Math.asin(LTYZlen/YZA);
+        double YZPAngle = 180 - LaserDeg[2] - Math.toDegrees(YZLAngle);
+
+        double XZA = TOXZlen/Math.sin(Math.toRadians(LaserDeg[1]));
+        double XZLAngle = Math.asin(LTXZlen/XZA);
+        double XZPAngle = 180 - LaserDeg[1] - Math.toDegrees(XZLAngle);
+
+//        //XY
+//        double ztheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getX(),TOvec.getY(),LTvec.getX(),LTvec.getY())));
+//        //XZ
+//        double ytheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getX(),TOvec.getZ(),LTvec.getX(),LTvec.getZ())));
+//        //ZY
+//        double xtheta = Math.toDegrees(Math.acos(Vec3.dot2vecNormal(TOvec.getZ(),TOvec.getY(),LTvec.getZ(),LTvec.getY())));
+        //XY
+        double ztheta = XYPAngle;
+        if (laser.getX() < target.getX()){
+            ztheta -= XYPAngle*2;
+        }
+        //XZ
+        double ytheta = XZPAngle;
+        //ZY
+        double xtheta = YZPAngle;
+
+        Vec3 theta = new Vec3(xtheta, 0, ztheta-90);
         Log.d(LOGTAG, "getTargetRotationAngle theta: "+ theta.toString());
 
 

@@ -75,6 +75,14 @@ public class Vec3 extends Point {
         return (d/(s1*s2));
     }
 
+    public double norm3(){
+        return Math.sqrt(getX()*getX() + getY() * getY() + getZ() * getZ());
+    }
+
+    public static double norm2(double a1, double a2){
+        return Math.sqrt(a1*a1 + a2*a2);
+    }
+
     public static double dot2vecNormal(double a1, double a2, double b1, double b2) {
         Log.d(MainService.LOGTAG, "dot2vecNormal start");
 
